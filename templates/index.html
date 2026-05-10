@@ -8,517 +8,444 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Syne:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
 <style>
-/* ─── RESET & VARS ───────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 :root {
-  --bg:       #060a0f;
-  --bg2:      #0c1219;
-  --bg3:      #101820;
-  --panel:    rgba(12,18,25,0.85);
-  --neon:     #00f2ff;
-  --neon2:    #00ff88;
-  --neon3:    #ff4cf2;
-  --warn:     #ff6b35;
-  --danger:   #ff2244;
-  --text:     #c8d8e8;
-  --muted:    #4a6070;
-  --border:   rgba(0,242,255,0.12);
-  --glow:     0 0 30px rgba(0,242,255,0.35);
-  --glow-g:   0 0 30px rgba(0,255,136,0.35);
-  --font-h:   'Orbitron', monospace;
-  --font-b:   'Syne', sans-serif;
-  --font-m:   'Space Mono', monospace;
-  --r:        12px;
+  --bg:#060a0f; --bg2:#0c1219; --bg3:#101820;
+  --panel:rgba(12,18,25,0.85);
+  --neon:#00f2ff; --neon2:#00ff88; --neon3:#ff4cf2;
+  --warn:#ff6b35; --danger:#ff2244;
+  --text:#c8d8e8; --muted:#4a6070; --border:rgba(0,242,255,0.12);
+  --glow:0 0 30px rgba(0,242,255,0.35);
+  --font-h:'Orbitron',monospace; --font-b:'Syne',sans-serif; --font-m:'Space Mono',monospace;
+  --r:12px;
 }
+html { scroll-behavior:smooth; overflow-x:hidden; }
+body { background:var(--bg); color:var(--text); font-family:var(--font-b); min-height:100vh; overflow-x:hidden; }
+#bg-canvas { position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0.55; }
+::-webkit-scrollbar { width:4px; }
+::-webkit-scrollbar-track { background:var(--bg); }
+::-webkit-scrollbar-thumb { background:var(--neon); border-radius:2px; }
 
-html { scroll-behavior: smooth; overflow-x: hidden; }
-body { background: var(--bg); color: var(--text); font-family: var(--font-b); min-height: 100vh; overflow-x: hidden; }
-
-/* ─── CANVAS BACKGROUND ──────────────────────────── */
-#bg-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.55; }
-
-/* ─── SCROLLBAR ──────────────────────────────────── */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--neon); border-radius: 2px; }
-
-/* ─── NAV ────────────────────────────────────────── */
 nav {
-  position: fixed; top: 0; width: 100%; z-index: 100;
-  padding: 18px 60px;
-  display: flex; align-items: center; justify-content: space-between;
-  background: rgba(6,10,15,0.7);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
+  position:fixed; top:0; width:100%; z-index:100;
+  padding:18px 60px;
+  display:flex; align-items:center; justify-content:space-between;
+  background:rgba(6,10,15,0.7); backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
 }
-.logo {
-  font-family: var(--font-h); font-weight: 900; font-size: 1.2rem;
-  letter-spacing: 3px; color: var(--neon);
-  text-shadow: 0 0 20px rgba(0,242,255,0.6);
+.logo { font-family:var(--font-h); font-weight:900; font-size:1.2rem; letter-spacing:3px; color:var(--neon); text-shadow:0 0 20px rgba(0,242,255,0.6); }
+.logo span { color:var(--neon2); }
+.nav-links { display:flex; gap:36px; }
+.nav-links a { color:var(--muted); text-decoration:none; font-size:0.82rem; letter-spacing:2px; text-transform:uppercase; transition:color .3s; font-family:var(--font-m); }
+.nav-links a:hover { color:var(--neon); }
+.nav-badge { font-family:var(--font-m); font-size:0.72rem; letter-spacing:2px; padding:6px 14px; border:1px solid var(--neon2); border-radius:4px; color:var(--neon2); text-shadow:0 0 8px rgba(0,255,136,0.5); animation:pulse-badge 2.5s ease-in-out infinite; }
+@keyframes pulse-badge { 0%,100%{box-shadow:0 0 0 rgba(0,255,136,0.3);} 50%{box-shadow:0 0 14px rgba(0,255,136,0.5);} }
+
+section { position:relative; z-index:1; }
+.container { max-width:1200px; margin:0 auto; padding:0 40px; }
+
+/* HERO */
+#hero { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:140px 40px 80px; position:relative; overflow:hidden; }
+.hero-eyebrow { font-family:var(--font-m); font-size:0.72rem; letter-spacing:5px; text-transform:uppercase; color:var(--neon); margin-bottom:28px; display:flex; align-items:center; gap:12px; opacity:0; animation:fadeUp .8s ease .2s forwards; }
+.hero-eyebrow::before,.hero-eyebrow::after { content:''; flex:1; max-width:60px; height:1px; background:linear-gradient(90deg,transparent,var(--neon)); }
+.hero-eyebrow::after { transform:scaleX(-1); }
+h1.hero-title { font-family:var(--font-h); font-weight:900; font-size:clamp(2.6rem,7vw,6rem); line-height:1.05; letter-spacing:-1px; color:#fff; margin-bottom:24px; opacity:0; animation:fadeUp .9s ease .4s forwards; }
+h1.hero-title .accent { color:var(--neon); text-shadow:0 0 30px rgba(0,242,255,0.7); }
+h1.hero-title .accent2 { color:var(--neon2); text-shadow:0 0 30px rgba(0,255,136,0.6); }
+.hero-sub { font-size:1.1rem; color:var(--muted); max-width:560px; line-height:1.7; margin:0 auto 50px; opacity:0; animation:fadeUp .9s ease .6s forwards; }
+.hero-cta-row { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; opacity:0; animation:fadeUp .9s ease .8s forwards; }
+.btn-primary { background:var(--neon); color:#000; font-family:var(--font-h); font-weight:700; font-size:0.78rem; letter-spacing:3px; text-transform:uppercase; padding:16px 36px; border:none; border-radius:4px; cursor:pointer; position:relative; overflow:hidden; transition:transform .2s,box-shadow .2s; text-decoration:none; display:inline-flex; align-items:center; gap:10px; }
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 0 40px rgba(0,242,255,0.6); }
+.btn-secondary { background:transparent; color:var(--neon); font-family:var(--font-h); font-weight:600; font-size:0.78rem; letter-spacing:3px; text-transform:uppercase; padding:15px 36px; border:1px solid var(--neon); border-radius:4px; cursor:pointer; transition:background .25s,box-shadow .25s; text-decoration:none; display:inline-flex; align-items:center; gap:10px; }
+.btn-secondary:hover { background:rgba(0,242,255,0.08); box-shadow:0 0 20px rgba(0,242,255,0.3); }
+.hero-stats { display:flex; gap:60px; margin-top:80px; justify-content:center; flex-wrap:wrap; opacity:0; animation:fadeUp .9s ease 1s forwards; }
+.stat { text-align:center; }
+.stat-val { font-family:var(--font-h); font-size:2rem; font-weight:900; color:#fff; line-height:1; }
+.stat-val .unit { color:var(--neon); font-size:1.2rem; }
+.stat-label { font-size:0.72rem; color:var(--muted); letter-spacing:3px; text-transform:uppercase; margin-top:6px; }
+.stat-divider { width:1px; background:var(--border); align-self:stretch; }
+.trust-badge { position:absolute; bottom:40px; right:60px; background:var(--panel); border:1px solid var(--border); border-radius:var(--r); padding:14px 20px; backdrop-filter:blur(16px); display:flex; align-items:center; gap:12px; font-family:var(--font-m); font-size:0.7rem; color:var(--neon2); animation:floatBadge 4s ease-in-out infinite; }
+.trust-badge .dot { width:8px; height:8px; border-radius:50%; background:var(--neon2); box-shadow:0 0 10px var(--neon2); animation:blink 1.2s ease-in-out infinite; }
+@keyframes floatBadge { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
+@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+/* PROBLEM */
+#problem { padding:120px 0; }
+.section-label { font-family:var(--font-m); font-size:0.7rem; letter-spacing:5px; text-transform:uppercase; color:var(--neon3); margin-bottom:16px; }
+.section-title { font-family:var(--font-h); font-weight:700; font-size:clamp(1.8rem,4vw,3rem); color:#fff; line-height:1.2; margin-bottom:20px; }
+.section-sub { color:var(--muted); max-width:520px; line-height:1.7; font-size:1rem; }
+.problem-grid { display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:center; margin-top:20px; }
+.threat-list { margin-top:40px; display:flex; flex-direction:column; gap:16px; }
+.threat-item { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); padding:18px 22px; display:flex; align-items:flex-start; gap:14px; transition:border-color .3s,transform .3s; }
+.threat-item:hover { border-color:rgba(255,68,68,0.4); transform:translateX(4px); }
+.threat-icon { font-size:1.2rem; flex-shrink:0; margin-top:2px; }
+.threat-item h4 { font-family:var(--font-h); font-size:0.75rem; letter-spacing:2px; color:var(--danger); margin-bottom:4px; }
+.threat-item p { font-size:0.85rem; color:var(--muted); line-height:1.5; }
+.problem-visual { position:relative; aspect-ratio:1; display:flex; align-items:center; justify-content:center; }
+.prob-ring { position:absolute; border-radius:50%; border:1px solid; animation:spin linear infinite; }
+.prob-ring:nth-child(1) { width:340px; height:340px; border-color:rgba(255,36,68,0.25); animation-duration:20s; }
+.prob-ring:nth-child(2) { width:260px; height:260px; border-color:rgba(255,36,68,0.18); animation-duration:15s; animation-direction:reverse; }
+.prob-ring:nth-child(3) { width:180px; height:180px; border-color:rgba(255,36,68,0.3); animation-duration:10s; }
+@keyframes spin { from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+.prob-center { width:120px; height:120px; border-radius:50%; background:radial-gradient(circle,rgba(255,36,68,0.2),transparent); border:1px solid rgba(255,36,68,0.5); display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:var(--font-h); font-size:0.6rem; letter-spacing:2px; color:var(--danger); text-align:center; gap:4px; }
+.prob-center .big { font-size:2rem; font-weight:900; line-height:1; }
+.prob-orbit { position:absolute; width:48px; height:48px; border-radius:50%; background:var(--bg2); border:1px solid rgba(255,36,68,0.3); display:flex; align-items:center; justify-content:center; font-size:1.2rem; }
+
+/* FEATURES */
+#features { padding:120px 0; }
+.features-header { text-align:center; margin-bottom:70px; }
+.features-header .section-sub { margin:0 auto; }
+.features-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; }
+.feature-card { background:var(--bg2); border:1px solid var(--border); border-radius:16px; padding:36px 30px; position:relative; overflow:hidden; transition:transform .3s,border-color .3s,box-shadow .3s; cursor:default; }
+.feature-card::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at top left,rgba(0,242,255,0.06),transparent 60%); opacity:0; transition:opacity .3s; }
+.feature-card:hover { transform:translateY(-6px); border-color:rgba(0,242,255,0.35); box-shadow:0 0 40px rgba(0,242,255,0.12); }
+.feature-card:hover::before { opacity:1; }
+.feature-card:nth-child(2) { background:linear-gradient(145deg,#0c1219,#0e1a14); }
+.feature-card:nth-child(2)::before { background:radial-gradient(ellipse at top left,rgba(0,255,136,0.06),transparent 60%); }
+.feature-card:nth-child(2):hover { border-color:rgba(0,255,136,0.35); box-shadow:0 0 40px rgba(0,255,136,0.12); }
+.feature-card:nth-child(3)::before { background:radial-gradient(ellipse at top left,rgba(255,76,242,0.06),transparent 60%); }
+.feature-card:nth-child(3):hover { border-color:rgba(255,76,242,0.35); box-shadow:0 0 40px rgba(255,76,242,0.12); }
+.feature-num { font-family:var(--font-h); font-size:0.65rem; letter-spacing:4px; color:var(--muted); margin-bottom:20px; }
+.feature-icon-wrap { width:56px; height:56px; border-radius:12px; margin-bottom:22px; display:flex; align-items:center; justify-content:center; font-size:1.6rem; background:rgba(0,242,255,0.08); border:1px solid rgba(0,242,255,0.2); }
+.feature-card:nth-child(2) .feature-icon-wrap { background:rgba(0,255,136,0.08); border-color:rgba(0,255,136,0.2); }
+.feature-card:nth-child(3) .feature-icon-wrap { background:rgba(255,76,242,0.08); border-color:rgba(255,76,242,0.2); }
+.feature-card h3 { font-family:var(--font-h); font-size:0.85rem; letter-spacing:2px; font-weight:700; color:#fff; margin-bottom:12px; text-transform:uppercase; }
+.feature-card p { font-size:0.88rem; color:var(--muted); line-height:1.7; margin-bottom:20px; }
+.feature-tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:auto; }
+.tag { font-family:var(--font-m); font-size:0.62rem; letter-spacing:1px; padding:4px 10px; border-radius:100px; background:rgba(0,242,255,0.07); border:1px solid rgba(0,242,255,0.2); color:var(--neon); }
+.feature-card:nth-child(2) .tag { background:rgba(0,255,136,0.07); border-color:rgba(0,255,136,0.2); color:var(--neon2); }
+.feature-card:nth-child(3) .tag { background:rgba(255,76,242,0.07); border-color:rgba(255,76,242,0.2); color:var(--neon3); }
+.feature-bar { height:2px; border-radius:1px; margin-top:28px; background:var(--border); overflow:hidden; }
+.feature-bar-fill { height:100%; border-radius:1px; width:0; transition:width 1s ease; }
+.feature-card:hover .feature-bar-fill { width:100%; }
+.feature-card:nth-child(1) .feature-bar-fill { background:var(--neon); }
+.feature-card:nth-child(2) .feature-bar-fill { background:var(--neon2); }
+.feature-card:nth-child(3) .feature-bar-fill { background:var(--neon3); }
+
+/* USE CASES */
+#usecases { padding:120px 0; background:linear-gradient(180deg,transparent,rgba(0,242,255,0.02),transparent); }
+.usecases-header { text-align:center; margin-bottom:70px; }
+.usecase-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:24px; }
+.usecase-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); padding:30px; display:flex; gap:20px; transition:border-color .3s,transform .3s; }
+.usecase-card:hover { border-color:rgba(0,242,255,0.3); transform:translateY(-4px); }
+.uc-icon { width:52px; height:52px; border-radius:10px; flex-shrink:0; background:rgba(0,242,255,0.07); border:1px solid rgba(0,242,255,0.15); display:flex; align-items:center; justify-content:center; font-size:1.4rem; }
+.uc-body h4 { font-family:var(--font-h); font-size:0.75rem; letter-spacing:2px; color:#fff; margin-bottom:8px; }
+.uc-body p { font-size:0.84rem; color:var(--muted); line-height:1.6; }
+.uc-compliance { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+.compliance-badge { font-family:var(--font-m); font-size:0.6rem; padding:3px 8px; border-radius:100px; background:rgba(0,255,136,0.07); border:1px solid rgba(0,255,136,0.2); color:var(--neon2); }
+
+/* ══════════════════════════════════════════
+   SCANNER SECTION
+══════════════════════════════════════════ */
+#scanner { padding:100px 0 120px; opacity:0; pointer-events:none; transform:translateY(40px); transition:opacity .7s ease,transform .7s ease; }
+#scanner.visible { opacity:1; pointer-events:all; transform:translateY(0); }
+.scanner-header { text-align:center; margin-bottom:60px; }
+
+/* ── Camera Permission Gate ── */
+#cam-gate {
+  background:var(--bg2); border:1px solid rgba(255,107,53,0.4);
+  border-radius:16px; padding:40px; text-align:center;
+  display:none; margin-bottom:28px;
 }
-.logo span { color: var(--neon2); }
-.nav-links { display: flex; gap: 36px; }
-.nav-links a { color: var(--muted); text-decoration: none; font-size: 0.82rem; letter-spacing: 2px; text-transform: uppercase; transition: color .3s; font-family: var(--font-m); }
-.nav-links a:hover { color: var(--neon); }
-.nav-badge {
-  font-family: var(--font-m); font-size: 0.72rem; letter-spacing: 2px;
-  padding: 6px 14px; border: 1px solid var(--neon2);
-  border-radius: 4px; color: var(--neon2);
-  text-shadow: 0 0 8px rgba(0,255,136,0.5);
-  animation: pulse-badge 2.5s ease-in-out infinite;
+#cam-gate.visible { display:block; }
+#cam-gate .gate-icon { font-size:3rem; margin-bottom:16px; }
+#cam-gate h3 { font-family:var(--font-h); font-size:0.9rem; letter-spacing:3px; color:var(--warn); margin-bottom:10px; }
+#cam-gate p { font-size:0.85rem; color:var(--muted); line-height:1.6; max-width:480px; margin:0 auto 24px; }
+.btn-grant { background:var(--warn); color:#000; font-family:var(--font-h); font-weight:700; font-size:0.72rem; letter-spacing:2px; padding:12px 28px; border:none; border-radius:4px; cursor:pointer; transition:transform .2s,box-shadow .2s; }
+.btn-grant:hover { transform:translateY(-2px); box-shadow:0 0 24px rgba(255,107,53,0.5); }
+.cam-troubleshoot { margin-top:16px; font-family:var(--font-m); font-size:0.65rem; color:var(--muted); }
+.cam-troubleshoot a { color:var(--neon); text-decoration:none; }
+
+/* ══════════════════════════════════════════
+   REGISTRATION PANEL — NEW
+══════════════════════════════════════════ */
+#register-panel {
+  background:linear-gradient(135deg, rgba(0,242,255,0.04), rgba(0,255,136,0.02));
+  border:1px solid rgba(0,242,255,0.25);
+  border-radius:16px; padding:28px 32px;
+  margin-bottom:28px;
+  transition:border-color .4s;
 }
-@keyframes pulse-badge {
-  0%,100% { box-shadow: 0 0 0 rgba(0,255,136,0.3); }
-  50% { box-shadow: 0 0 14px rgba(0,255,136,0.5); }
+#register-panel.registered { border-color:rgba(0,255,136,0.4); background:linear-gradient(135deg, rgba(0,255,136,0.05), rgba(0,242,255,0.02)); }
+#register-panel.error { border-color:rgba(255,34,68,0.4); background:linear-gradient(135deg, rgba(255,34,68,0.05), transparent); }
+
+.reg-panel-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:22px; flex-wrap:wrap; gap:12px;
 }
-
-/* ─── SHARED UTILS ───────────────────────────────── */
-section { position: relative; z-index: 1; }
-.container { max-width: 1200px; margin: 0 auto; padding: 0 40px; }
-
-/* ─── HERO ───────────────────────────────────────── */
-#hero {
-  min-height: 100vh;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  text-align: center; padding: 140px 40px 80px;
-  position: relative; overflow: hidden;
+.reg-panel-title-group { display:flex; align-items:center; gap:14px; }
+.reg-panel-icon {
+  width:48px; height:48px; border-radius:10px;
+  background:rgba(0,242,255,0.08); border:1px solid rgba(0,242,255,0.2);
+  display:flex; align-items:center; justify-content:center; font-size:1.5rem;
 }
-.hero-eyebrow {
-  font-family: var(--font-m); font-size: 0.72rem; letter-spacing: 5px;
-  text-transform: uppercase; color: var(--neon);
-  margin-bottom: 28px;
-  display: flex; align-items: center; gap: 12px;
-  opacity: 0; animation: fadeUp .8s ease .2s forwards;
+.reg-panel-title { font-family:var(--font-h); font-size:0.78rem; letter-spacing:3px; color:#fff; }
+.reg-panel-subtitle { font-size:0.75rem; color:var(--muted); margin-top:3px; }
+
+.reg-status-badge {
+  font-family:var(--font-m); font-size:0.62rem; letter-spacing:2px;
+  padding:6px 14px; border-radius:100px;
+  border:1px solid; transition:all .4s;
+  white-space:nowrap;
 }
-.hero-eyebrow::before, .hero-eyebrow::after { content: ''; flex: 1; max-width: 60px; height: 1px; background: linear-gradient(90deg, transparent, var(--neon)); }
-.hero-eyebrow::after { transform: scaleX(-1); }
+.reg-status-badge.unregistered { color:var(--warn); border-color:rgba(255,107,53,0.4); background:rgba(255,107,53,0.07); }
+.reg-status-badge.registered   { color:var(--neon2); border-color:rgba(0,255,136,0.4); background:rgba(0,255,136,0.07); animation:pulse-badge 2.5s ease-in-out infinite; }
 
-h1.hero-title {
-  font-family: var(--font-h); font-weight: 900;
-  font-size: clamp(2.6rem, 7vw, 6rem);
-  line-height: 1.05; letter-spacing: -1px;
-  color: #fff;
-  margin-bottom: 24px;
-  opacity: 0; animation: fadeUp .9s ease .4s forwards;
+.reg-body { display:grid; grid-template-columns:120px 1fr; gap:24px; align-items:start; }
+
+/* Preview box */
+.reg-preview {
+  width:120px; height:120px; border-radius:12px;
+  background:rgba(0,242,255,0.05); border:1px dashed rgba(0,242,255,0.2);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  font-size:2rem; color:var(--muted); overflow:hidden; position:relative;
+  flex-shrink:0; transition:border-color .3s;
 }
-h1.hero-title .accent { color: var(--neon); text-shadow: 0 0 30px rgba(0,242,255,0.7); }
-h1.hero-title .accent2 { color: var(--neon2); text-shadow: 0 0 30px rgba(0,255,136,0.6); }
-
-.hero-sub {
-  font-size: 1.1rem; color: var(--muted); max-width: 560px; line-height: 1.7;
-  margin: 0 auto 50px;
-  opacity: 0; animation: fadeUp .9s ease .6s forwards;
+.reg-preview img { width:100%; height:100%; object-fit:cover; border-radius:11px; }
+.reg-preview .preview-label {
+  position:absolute; bottom:0; left:0; right:0;
+  background:rgba(0,0,0,0.7); font-family:var(--font-m); font-size:0.55rem;
+  letter-spacing:1px; color:var(--neon2); text-align:center; padding:5px;
 }
+.reg-preview.has-image { border-color:rgba(0,242,255,0.4); }
+.reg-preview.registered { border-color:rgba(0,255,136,0.5); }
 
-.hero-cta-row { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; opacity: 0; animation: fadeUp .9s ease .8s forwards; }
+/* Form side */
+.reg-form-col { display:flex; flex-direction:column; gap:14px; }
+.reg-description { font-size:0.82rem; color:var(--muted); line-height:1.6; }
+.reg-actions { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
 
-.btn-primary {
-  background: var(--neon); color: #000;
-  font-family: var(--font-h); font-weight: 700; font-size: 0.78rem;
-  letter-spacing: 3px; text-transform: uppercase;
-  padding: 16px 36px; border: none; border-radius: 4px; cursor: pointer;
-  position: relative; overflow: hidden;
-  transition: transform .2s, box-shadow .2s;
-  text-decoration: none; display: inline-flex; align-items: center; gap: 10px;
+/* Hidden real input */
+#face-upload { display:none; }
+
+.btn-upload-label {
+  background:transparent; color:var(--neon); font-family:var(--font-h); font-weight:700;
+  font-size:0.68rem; letter-spacing:2px; padding:10px 20px;
+  border:1px solid rgba(0,242,255,0.4); border-radius:4px;
+  cursor:pointer; transition:background .2s, box-shadow .2s;
+  display:inline-flex; align-items:center; gap:8px; text-transform:uppercase;
 }
-.btn-primary::before {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.3), transparent);
-  opacity: 0; transition: opacity .2s;
+.btn-upload-label:hover { background:rgba(0,242,255,0.08); box-shadow:0 0 16px rgba(0,242,255,0.2); }
+
+.btn-register-face {
+  background:var(--neon2); color:#000; font-family:var(--font-h); font-weight:700;
+  font-size:0.68rem; letter-spacing:2px; padding:10px 22px;
+  border:none; border-radius:4px; cursor:pointer;
+  transition:transform .2s, box-shadow .2s;
+  display:none; align-items:center; gap:8px; text-transform:uppercase;
 }
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 40px rgba(0,242,255,0.6); }
-.btn-primary:hover::before { opacity: 1; }
+.btn-register-face:hover { transform:translateY(-2px); box-shadow:0 0 24px rgba(0,255,136,0.5); }
+.btn-register-face.visible { display:inline-flex; }
+.btn-register-face:disabled { opacity:0.4; cursor:not-allowed; pointer-events:none; }
 
-.btn-secondary {
-  background: transparent; color: var(--neon);
-  font-family: var(--font-h); font-weight: 600; font-size: 0.78rem;
-  letter-spacing: 3px; text-transform: uppercase;
-  padding: 15px 36px; border: 1px solid var(--neon); border-radius: 4px; cursor: pointer;
-  transition: background .25s, box-shadow .25s;
-  text-decoration: none; display: inline-flex; align-items: center; gap: 10px;
+.reg-feedback {
+  font-family:var(--font-m); font-size:0.7rem; letter-spacing:1px;
+  line-height:1.5; padding:10px 14px; border-radius:8px;
+  display:none;
 }
-.btn-secondary:hover { background: rgba(0,242,255,0.08); box-shadow: 0 0 20px rgba(0,242,255,0.3); }
+.reg-feedback.visible { display:block; }
+.reg-feedback.success { background:rgba(0,255,136,0.08); border:1px solid rgba(0,255,136,0.25); color:var(--neon2); }
+.reg-feedback.error   { background:rgba(255,34,68,0.08); border:1px solid rgba(255,34,68,0.25); color:var(--danger); }
 
-/* Stats strip */
-.hero-stats {
-  display: flex; gap: 60px; margin-top: 80px; justify-content: center; flex-wrap: wrap;
-  opacity: 0; animation: fadeUp .9s ease 1s forwards;
+/* Face match confidence strip (shown during ID_SCAN) */
+#face-match-strip {
+  background:var(--bg2); border:1px solid var(--border); border-radius:10px;
+  padding:14px 20px; display:flex; align-items:center; gap:16px;
+  transition:all .4s; display:none;
 }
-.stat { text-align: center; }
-.stat-val {
-  font-family: var(--font-h); font-size: 2rem; font-weight: 900; color: #fff;
-  line-height: 1;
+#face-match-strip.visible { display:flex; }
+.fms-label { font-family:var(--font-m); font-size:0.62rem; letter-spacing:2px; color:var(--muted); flex-shrink:0; }
+.fms-bar-track { flex:1; height:8px; border-radius:4px; background:rgba(255,255,255,0.06); overflow:hidden; }
+.fms-bar-fill { height:100%; border-radius:4px; width:0%; transition:width .6s ease, background .4s; background:var(--danger); }
+.fms-val { font-family:var(--font-h); font-size:0.9rem; font-weight:700; min-width:50px; text-align:right; transition:color .4s; }
+.fms-status { font-family:var(--font-m); font-size:0.6rem; letter-spacing:2px; padding:4px 10px; border-radius:100px; border:1px solid; white-space:nowrap; }
+.fms-status.match    { color:var(--neon2); border-color:rgba(0,255,136,0.4); background:rgba(0,255,136,0.08); }
+.fms-status.no-match { color:var(--danger); border-color:rgba(255,34,68,0.3); background:rgba(255,34,68,0.06); }
+.fms-status.scanning { color:var(--neon);   border-color:rgba(0,242,255,0.3); background:rgba(0,242,255,0.06); }
+
+/* ── Toast notification ── */
+#toast {
+  position:fixed; bottom:32px; left:50%; transform:translateX(-50%) translateY(80px);
+  background:var(--bg2); border:1px solid; border-radius:10px;
+  padding:14px 22px; z-index:999; font-family:var(--font-m); font-size:0.72rem;
+  letter-spacing:1px; display:flex; align-items:center; gap:10px;
+  transition:transform .35s cubic-bezier(0.34,1.56,0.64,1), opacity .3s;
+  opacity:0; max-width:460px; text-align:center;
+  box-shadow:0 8px 40px rgba(0,0,0,0.6);
 }
-.stat-val .unit { color: var(--neon); font-size: 1.2rem; }
-.stat-label { font-size: 0.72rem; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; margin-top: 6px; }
-.stat-divider { width: 1px; background: var(--border); align-self: stretch; }
+#toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+#toast.toast-error  { border-color:rgba(255,34,68,0.5); color:var(--danger); }
+#toast.toast-ok     { border-color:rgba(0,255,136,0.4); color:var(--neon2); }
+#toast.toast-warn   { border-color:rgba(255,107,53,0.4); color:var(--warn); }
 
-/* floating badge */
-.trust-badge {
-  position: absolute; bottom: 40px; right: 60px;
-  background: var(--panel); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 14px 20px;
-  backdrop-filter: blur(16px);
-  display: flex; align-items: center; gap: 12px;
-  font-family: var(--font-m); font-size: 0.7rem; color: var(--neon2);
-  animation: floatBadge 4s ease-in-out infinite;
+/* ── Dashboard layout ── */
+.dashboard { display:grid; grid-template-columns:280px 1fr; gap:28px; align-items:start; }
+
+/* ── Sidebar ── */
+.kyc-sidebar { background:var(--bg2); border:1px solid var(--border); border-radius:16px; padding:24px 20px; position:sticky; top:100px; }
+.sidebar-title { font-family:var(--font-h); font-size:0.65rem; letter-spacing:4px; color:var(--muted); text-transform:uppercase; margin-bottom:24px; padding-bottom:14px; border-bottom:1px solid var(--border); }
+.step-item { display:flex; align-items:flex-start; gap:14px; padding:14px 0; border-bottom:1px solid rgba(255,255,255,0.04); opacity:0.35; transition:opacity .5s,transform .3s; position:relative; }
+.step-item.active { opacity:1; }
+.step-item.verified { opacity:0.75; }
+.step-dot { width:28px; height:28px; border-radius:50%; border:1px solid var(--muted); display:flex; align-items:center; justify-content:center; font-family:var(--font-m); font-size:0.65rem; color:var(--muted); flex-shrink:0; transition:all .4s; background:var(--bg); }
+.step-item.active .step-dot { border-color:var(--neon); color:var(--neon); background:rgba(0,242,255,0.1); box-shadow:0 0 15px rgba(0,242,255,0.4); animation:step-pulse 1.8s ease-in-out infinite; }
+.step-item.verified .step-dot { border-color:var(--neon2); background:rgba(0,255,136,0.15); color:var(--neon2); box-shadow:0 0 10px rgba(0,255,136,0.3); animation:none; }
+@keyframes step-pulse { 0%,100%{box-shadow:0 0 15px rgba(0,242,255,0.4);} 50%{box-shadow:0 0 28px rgba(0,242,255,0.7);} }
+.step-connector { position:absolute; left:13px; top:42px; width:1px; height:calc(100% - 14px); background:var(--border); }
+.step-item.verified .step-connector { background:linear-gradient(180deg,var(--neon2),var(--border)); }
+.step-body { flex:1; }
+.step-name { font-family:var(--font-h); font-size:0.7rem; letter-spacing:2px; color:#fff; margin-bottom:3px; }
+.step-item.active .step-name { color:var(--neon); }
+.step-item.verified .step-name { color:var(--neon2); }
+.step-desc { font-size:0.74rem; color:var(--muted); line-height:1.4; }
+.sidebar-status { margin-top:24px; padding-top:18px; border-top:1px solid var(--border); }
+.sys-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.sys-label { font-family:var(--font-m); font-size:0.62rem; color:var(--muted); letter-spacing:2px; }
+.sys-val { font-family:var(--font-m); font-size:0.65rem; color:var(--neon2); }
+.strikes-display { margin-top:16px; padding:12px; background:rgba(255,34,68,0.07); border:1px solid rgba(255,34,68,0.2); border-radius:8px; display:none; }
+.strikes-display.visible { display:block; }
+.strikes-label { font-family:var(--font-m); font-size:0.65rem; color:var(--danger); letter-spacing:2px; margin-bottom:6px; }
+.strikes-dots { display:flex; gap:6px; }
+.strike-dot { width:10px; height:10px; border-radius:50%; background:rgba(255,34,68,0.25); border:1px solid rgba(255,34,68,0.3); transition:background .3s; }
+.strike-dot.hit { background:var(--danger); box-shadow:0 0 8px var(--danger); }
+
+/* ── Scanner Main ── */
+.scanner-main { display:flex; flex-direction:column; gap:24px; }
+
+/* ── Viewfinder ── */
+.viewfinder { position:relative; border-radius:16px; overflow:hidden; background:#000; aspect-ratio:4/3; border:1px solid rgba(0,242,255,0.2); }
+.viewfinder-corner { position:absolute; width:26px; height:26px; z-index:2; border-color:var(--neon); border-style:solid; border-width:0; }
+.viewfinder-corner.tl { top:12px; left:12px; border-top-width:2px; border-left-width:2px; border-radius:3px 0 0 0; }
+.viewfinder-corner.tr { top:12px; right:12px; border-top-width:2px; border-right-width:2px; border-radius:0 3px 0 0; }
+.viewfinder-corner.bl { bottom:12px; left:12px; border-bottom-width:2px; border-left-width:2px; border-radius:0 0 0 3px; }
+.viewfinder-corner.br { bottom:12px; right:12px; border-bottom-width:2px; border-right-width:2px; border-radius:0 0 3px 0; }
+.scan-line { position:absolute; width:100%; height:2px; z-index:3; background:linear-gradient(90deg,transparent,var(--neon),transparent); box-shadow:0 0 12px var(--neon),0 0 25px rgba(0,242,255,0.5); top:0; animation:scan-anim 3.5s ease-in-out infinite; }
+@keyframes scan-anim { 0%{top:0;opacity:0.8;} 50%{opacity:1;} 100%{top:100%;opacity:0.8;} }
+.viewfinder img { width:100%; height:100%; object-fit:cover; display:block; }
+.vf-status-bar { position:absolute; bottom:0; left:0; right:0; z-index:4; background:linear-gradient(0deg,rgba(0,0,0,0.85),transparent); padding:20px 20px 16px; display:flex; justify-content:space-between; align-items:flex-end; }
+.vf-state-label { font-family:var(--font-h); font-size:0.65rem; letter-spacing:3px; color:var(--neon); }
+.vf-state-val { font-family:var(--font-m); font-size:0.7rem; color:#fff; margin-top:2px; }
+.vf-progress-label { font-family:var(--font-m); font-size:0.65rem; color:var(--muted); text-align:right; }
+.vf-progress-val { font-family:var(--font-h); font-size:0.8rem; color:var(--neon2); text-align:right; margin-top:2px; }
+.result-overlay { position:absolute; inset:0; z-index:10; display:flex; flex-direction:column; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .5s; backdrop-filter:blur(4px); }
+.result-overlay.visible { opacity:1; pointer-events:all; }
+.result-overlay.success { background:rgba(0,20,10,0.85); }
+.result-overlay.failure { background:rgba(20,0,5,0.85); }
+.result-icon { font-size:4rem; margin-bottom:16px; }
+.result-title { font-family:var(--font-h); font-size:1.5rem; font-weight:900; margin-bottom:8px; }
+.result-overlay.success .result-title { color:var(--neon2); text-shadow:0 0 30px rgba(0,255,136,0.7); }
+.result-overlay.failure .result-title { color:var(--danger); text-shadow:0 0 30px rgba(255,34,68,0.7); }
+.result-sub { font-family:var(--font-m); font-size:0.75rem; color:var(--muted); letter-spacing:2px; margin-bottom:28px; }
+
+/* ── Instruction Card ── */
+#instruction-card {
+  background:linear-gradient(135deg, rgba(0,242,255,0.05), rgba(0,255,136,0.03));
+  border:1px solid rgba(0,242,255,0.25);
+  border-radius:16px; padding:24px 28px;
+  display:flex; align-items:center; gap:20px;
+  transition:all .5s ease; min-height:92px;
 }
-.trust-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--neon2); box-shadow: 0 0 10px var(--neon2); animation: blink 1.2s ease-in-out infinite; }
-@keyframes floatBadge { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-@keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+#instruction-card.warn-card { background:linear-gradient(135deg,rgba(255,107,53,0.08),rgba(255,34,68,0.04)); border-color:rgba(255,107,53,0.35); }
+#instruction-card.success-card { background:linear-gradient(135deg,rgba(0,255,136,0.08),rgba(0,242,255,0.03)); border-color:rgba(0,255,136,0.4); }
+.ic-icon { font-size:2.4rem; flex-shrink:0; width:64px; height:64px; display:flex; align-items:center; justify-content:center; background:rgba(0,242,255,0.07); border:1px solid rgba(0,242,255,0.15); border-radius:12px; transition:all .4s ease; }
+.ic-body { flex:1; }
+.ic-label { font-family:var(--font-m); font-size:0.62rem; letter-spacing:3px; text-transform:uppercase; color:var(--neon); margin-bottom:6px; }
+#instruction-card.warn-card .ic-label { color:var(--warn); }
+#instruction-card.success-card .ic-label { color:var(--neon2); }
+.ic-text { font-family:var(--font-h); font-size:0.92rem; font-weight:600; letter-spacing:1px; color:#fff; line-height:1.4; }
+.ic-subtext { font-size:0.78rem; color:var(--muted); margin-top:4px; line-height:1.5; }
+@keyframes ic-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(0,242,255,0.4);} 50%{box-shadow:0 0 0 8px rgba(0,242,255,0);} }
+.ic-icon.pulsing { animation:ic-pulse 1.6s ease-in-out infinite; }
 
-/* ─── PROBLEM STATEMENT ──────────────────────────── */
-#problem { padding: 120px 0; }
+/* ── Threat Score Panel ── */
+#threat-score { background:var(--bg2); border:1px solid var(--border); border-radius:16px; padding:24px 28px; }
+.ts-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+.ts-title { font-family:var(--font-h); font-size:0.7rem; letter-spacing:3px; text-transform:uppercase; color:var(--muted); }
+.ts-badge { font-family:var(--font-m); font-size:0.6rem; letter-spacing:2px; padding:4px 10px; border-radius:100px; background:rgba(0,242,255,0.07); border:1px solid rgba(0,242,255,0.2); color:var(--neon); }
+.ts-meters { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+.ts-meter-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.ts-meter-label { font-family:var(--font-m); font-size:0.6rem; letter-spacing:2px; color:var(--muted); text-transform:uppercase; }
+.ts-meter-val { font-family:var(--font-h); font-size:0.85rem; font-weight:700; }
+.ts-bar-track { height:6px; border-radius:3px; background:rgba(255,255,255,0.06); overflow:hidden; position:relative; }
+.ts-bar-fill { height:100%; border-radius:3px; width:0%; transition:width 1.2s cubic-bezier(0.34,1.56,0.64,1); position:relative; }
+.ts-bar-fill::after { content:''; position:absolute; right:0; top:0; bottom:0; width:20px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.5)); border-radius:3px; }
+/* meter color: Face Identity */
+.ts-meter:nth-child(1) .ts-meter-val { color:#a78bfa; }
+.ts-meter:nth-child(1) .ts-bar-fill { background:linear-gradient(90deg,rgba(167,139,250,0.4),#a78bfa); box-shadow:0 0 10px rgba(167,139,250,0.4); }
+/* Pulse */
+.ts-meter:nth-child(2) .ts-meter-val { color:var(--neon); }
+.ts-meter:nth-child(2) .ts-bar-fill { background:linear-gradient(90deg,rgba(0,242,255,0.4),var(--neon)); box-shadow:0 0 10px rgba(0,242,255,0.4); }
+/* Gesture */
+.ts-meter:nth-child(3) .ts-meter-val { color:var(--neon2); }
+.ts-meter:nth-child(3) .ts-bar-fill { background:linear-gradient(90deg,rgba(0,255,136,0.4),var(--neon2)); box-shadow:0 0 10px rgba(0,255,136,0.4); }
+/* Spatial */
+.ts-meter:nth-child(4) .ts-meter-val { color:var(--neon3); }
+.ts-meter:nth-child(4) .ts-bar-fill { background:linear-gradient(90deg,rgba(255,76,242,0.4),var(--neon3)); box-shadow:0 0 10px rgba(255,76,242,0.4); }
 
-.section-label {
-  font-family: var(--font-m); font-size: 0.7rem; letter-spacing: 5px;
-  text-transform: uppercase; color: var(--neon3); margin-bottom: 16px;
-}
-.section-title {
-  font-family: var(--font-h); font-weight: 700;
-  font-size: clamp(1.8rem, 4vw, 3rem); color: #fff; line-height: 1.2;
-  margin-bottom: 20px;
-}
-.section-sub { color: var(--muted); max-width: 520px; line-height: 1.7; font-size: 1rem; }
+.ts-composite { margin-top:18px; padding-top:16px; border-top:1px solid var(--border); display:flex; align-items:center; gap:16px; }
+.ts-composite-label { font-family:var(--font-m); font-size:0.62rem; letter-spacing:3px; color:var(--muted); flex:1; }
+.ts-composite-score { font-family:var(--font-h); font-size:1.5rem; font-weight:900; color:#fff; transition:color .5s; }
+.ts-composite-score.low { color:var(--danger); }
+.ts-composite-score.mid { color:var(--warn); }
+.ts-composite-score.high { color:var(--neon2); }
+.ts-composite-bar-track { flex:2; height:4px; border-radius:2px; background:rgba(255,255,255,0.06); overflow:hidden; }
+.ts-composite-bar-fill { height:100%; border-radius:2px; width:0%; transition:width 1s ease, background .5s; background:var(--danger); }
 
-.problem-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; margin-top: 20px;
-}
-.problem-text { }
-.problem-text p { color: var(--muted); line-height: 1.8; margin-top: 16px; }
+/* Buttons */
+.scanner-cta-area { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
+.btn-scan { background:var(--neon); color:#000; font-family:var(--font-h); font-weight:700; font-size:0.75rem; letter-spacing:3px; padding:14px 30px; border:none; border-radius:4px; cursor:pointer; transition:transform .2s,box-shadow .2s; text-transform:uppercase; display:flex; align-items:center; gap:8px; }
+.btn-scan:hover { transform:translateY(-2px); box-shadow:0 0 30px rgba(0,242,255,0.5); }
+.btn-scan:disabled { opacity:0.35; cursor:not-allowed; pointer-events:none; }
+.btn-reset { background:transparent; color:var(--danger); font-family:var(--font-h); font-weight:700; font-size:0.75rem; letter-spacing:3px; padding:13px 30px; border:1px solid var(--danger); border-radius:4px; cursor:pointer; transition:background .2s,box-shadow .2s; text-transform:uppercase; display:none; align-items:center; gap:8px; }
+.btn-reset.visible { display:flex; }
+.btn-reset:hover { background:rgba(255,34,68,0.1); box-shadow:0 0 20px rgba(255,34,68,0.3); }
 
-.threat-list { margin-top: 40px; display: flex; flex-direction: column; gap: 16px; }
-.threat-item {
-  background: var(--bg2); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 18px 22px;
-  display: flex; align-items: flex-start; gap: 14px;
-  transition: border-color .3s, transform .3s;
-}
-.threat-item:hover { border-color: rgba(255,68,68,0.4); transform: translateX(4px); }
-.threat-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 2px; }
-.threat-item h4 { font-family: var(--font-h); font-size: 0.75rem; letter-spacing: 2px; color: var(--danger); margin-bottom: 4px; }
-.threat-item p { font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
+footer { border-top:1px solid var(--border); padding:40px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; position:relative; z-index:1; }
+.footer-logo { font-family:var(--font-h); font-size:0.85rem; letter-spacing:3px; color:var(--muted); }
+.footer-note { font-family:var(--font-m); font-size:0.65rem; color:var(--muted); letter-spacing:1px; }
 
-.problem-visual {
-  position: relative; aspect-ratio: 1;
-  display: flex; align-items: center; justify-content: center;
-}
-.prob-ring {
-  position: absolute; border-radius: 50%; border: 1px solid;
-  animation: spin linear infinite;
-}
-.prob-ring:nth-child(1) { width: 340px; height: 340px; border-color: rgba(255,36,68,0.25); animation-duration: 20s; }
-.prob-ring:nth-child(2) { width: 260px; height: 260px; border-color: rgba(255,36,68,0.18); animation-duration: 15s; animation-direction: reverse; }
-.prob-ring:nth-child(3) { width: 180px; height: 180px; border-color: rgba(255,36,68,0.3); animation-duration: 10s; }
-@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-.prob-center {
-  width: 120px; height: 120px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,36,68,0.2), transparent);
-  border: 1px solid rgba(255,36,68,0.5);
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  font-family: var(--font-h); font-size: 0.6rem; letter-spacing: 2px; color: var(--danger); text-align: center; gap: 4px;
-}
-.prob-center .big { font-size: 2rem; font-weight: 900; line-height: 1; }
-
-.prob-orbit {
-  position: absolute; width: 48px; height: 48px; border-radius: 50%;
-  background: var(--bg2); border: 1px solid rgba(255,36,68,0.3);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.2rem;
-}
-
-/* ─── HOW IT WORKS / FEATURES ────────────────────── */
-#features { padding: 120px 0; }
-.features-header { text-align: center; margin-bottom: 70px; }
-.features-header .section-sub { margin: 0 auto; }
-
-.features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
-
-.feature-card {
-  background: var(--bg2); border: 1px solid var(--border);
-  border-radius: 16px; padding: 36px 30px;
-  position: relative; overflow: hidden;
-  transition: transform .3s, border-color .3s, box-shadow .3s;
-  cursor: default;
-}
-.feature-card::before {
-  content: ''; position: absolute; inset: 0;
-  background: radial-gradient(ellipse at top left, rgba(0,242,255,0.06), transparent 60%);
-  opacity: 0; transition: opacity .3s;
-}
-.feature-card:hover { transform: translateY(-6px); border-color: rgba(0,242,255,0.35); box-shadow: 0 0 40px rgba(0,242,255,0.12); }
-.feature-card:hover::before { opacity: 1; }
-.feature-card:nth-child(2) { background: linear-gradient(145deg, #0c1219, #0e1a14); }
-.feature-card:nth-child(2)::before { background: radial-gradient(ellipse at top left, rgba(0,255,136,0.06), transparent 60%); }
-.feature-card:nth-child(2):hover { border-color: rgba(0,255,136,0.35); box-shadow: 0 0 40px rgba(0,255,136,0.12); }
-.feature-card:nth-child(3)::before { background: radial-gradient(ellipse at top left, rgba(255,76,242,0.06), transparent 60%); }
-.feature-card:nth-child(3):hover { border-color: rgba(255,76,242,0.35); box-shadow: 0 0 40px rgba(255,76,242,0.12); }
-
-.feature-num { font-family: var(--font-h); font-size: 0.65rem; letter-spacing: 4px; color: var(--muted); margin-bottom: 20px; }
-.feature-icon-wrap {
-  width: 56px; height: 56px; border-radius: 12px; margin-bottom: 22px;
-  display: flex; align-items: center; justify-content: center; font-size: 1.6rem;
-  background: rgba(0,242,255,0.08); border: 1px solid rgba(0,242,255,0.2);
-}
-.feature-card:nth-child(2) .feature-icon-wrap { background: rgba(0,255,136,0.08); border-color: rgba(0,255,136,0.2); }
-.feature-card:nth-child(3) .feature-icon-wrap { background: rgba(255,76,242,0.08); border-color: rgba(255,76,242,0.2); }
-
-.feature-card h3 {
-  font-family: var(--font-h); font-size: 0.85rem; letter-spacing: 2px; font-weight: 700;
-  color: #fff; margin-bottom: 12px; text-transform: uppercase;
-}
-.feature-card p { font-size: 0.88rem; color: var(--muted); line-height: 1.7; margin-bottom: 20px; }
-
-.feature-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
-.tag {
-  font-family: var(--font-m); font-size: 0.62rem; letter-spacing: 1px;
-  padding: 4px 10px; border-radius: 100px;
-  background: rgba(0,242,255,0.07); border: 1px solid rgba(0,242,255,0.2); color: var(--neon);
-}
-.feature-card:nth-child(2) .tag { background: rgba(0,255,136,0.07); border-color: rgba(0,255,136,0.2); color: var(--neon2); }
-.feature-card:nth-child(3) .tag { background: rgba(255,76,242,0.07); border-color: rgba(255,76,242,0.2); color: var(--neon3); }
-
-.feature-bar { height: 2px; border-radius: 1px; margin-top: 28px; background: var(--border); overflow: hidden; }
-.feature-bar-fill { height: 100%; border-radius: 1px; width: 0; transition: width 1s ease; }
-.feature-card:hover .feature-bar-fill { width: 100%; }
-.feature-card:nth-child(1) .feature-bar-fill { background: var(--neon); }
-.feature-card:nth-child(2) .feature-bar-fill { background: var(--neon2); }
-.feature-card:nth-child(3) .feature-bar-fill { background: var(--neon3); }
-
-/* ─── REAL-WORLD USE CASES ───────────────────────── */
-#usecases { padding: 120px 0; background: linear-gradient(180deg, transparent, rgba(0,242,255,0.02), transparent); }
-.usecases-header { text-align: center; margin-bottom: 70px; }
-
-.usecase-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
-
-.usecase-card {
-  background: var(--bg2); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 30px; display: flex; gap: 20px;
-  transition: border-color .3s, transform .3s;
-}
-.usecase-card:hover { border-color: rgba(0,242,255,0.3); transform: translateY(-4px); }
-.uc-icon {
-  width: 52px; height: 52px; border-radius: 10px; flex-shrink: 0;
-  background: rgba(0,242,255,0.07); border: 1px solid rgba(0,242,255,0.15);
-  display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
-}
-.uc-body h4 { font-family: var(--font-h); font-size: 0.75rem; letter-spacing: 2px; color: #fff; margin-bottom: 8px; }
-.uc-body p { font-size: 0.84rem; color: var(--muted); line-height: 1.6; }
-.uc-compliance {
-  display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px;
-}
-.compliance-badge {
-  font-family: var(--font-m); font-size: 0.6rem; padding: 3px 8px;
-  border-radius: 100px; background: rgba(0,255,136,0.07); border: 1px solid rgba(0,255,136,0.2); color: var(--neon2);
-}
-
-/* ─── KYC DASHBOARD SECTION ──────────────────────── */
-#scanner {
-  padding: 100px 0 120px;
-  opacity: 0; pointer-events: none;
-  transform: translateY(40px);
-  transition: opacity .7s ease, transform .7s ease;
-}
-#scanner.visible { opacity: 1; pointer-events: all; transform: translateY(0); }
-
-.scanner-header { text-align: center; margin-bottom: 60px; }
-
-.dashboard {
-  display: grid; grid-template-columns: 280px 1fr; gap: 28px; align-items: start;
-}
-
-/* Sidebar */
-.kyc-sidebar {
-  background: var(--bg2); border: 1px solid var(--border);
-  border-radius: 16px; padding: 24px 20px;
-  position: sticky; top: 100px;
-}
-.sidebar-title {
-  font-family: var(--font-h); font-size: 0.65rem; letter-spacing: 4px;
-  color: var(--muted); text-transform: uppercase; margin-bottom: 24px; padding-bottom: 14px;
-  border-bottom: 1px solid var(--border);
-}
-
-.step-item {
-  display: flex; align-items: flex-start; gap: 14px;
-  padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
-  opacity: 0.35; transition: opacity .5s, transform .3s;
-  position: relative;
-}
-.step-item.active { opacity: 1; }
-.step-item.verified { opacity: 0.75; }
-
-.step-dot {
-  width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--muted);
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-m); font-size: 0.65rem; color: var(--muted);
-  flex-shrink: 0; transition: all .4s; background: var(--bg);
-}
-.step-item.active .step-dot {
-  border-color: var(--neon); color: var(--neon); background: rgba(0,242,255,0.1);
-  box-shadow: 0 0 15px rgba(0,242,255,0.4);
-  animation: step-pulse 1.8s ease-in-out infinite;
-}
-.step-item.verified .step-dot {
-  border-color: var(--neon2); background: rgba(0,255,136,0.15);
-  color: var(--neon2); box-shadow: 0 0 10px rgba(0,255,136,0.3);
-  animation: none;
-}
-@keyframes step-pulse {
-  0%,100% { box-shadow: 0 0 15px rgba(0,242,255,0.4); }
-  50% { box-shadow: 0 0 28px rgba(0,242,255,0.7); }
-}
-
-.step-connector {
-  position: absolute; left: 13px; top: 42px; width: 1px;
-  height: calc(100% - 14px); background: var(--border);
-}
-.step-item.verified .step-connector { background: linear-gradient(180deg, var(--neon2), var(--border)); }
-
-.step-body { flex: 1; }
-.step-name { font-family: var(--font-h); font-size: 0.7rem; letter-spacing: 2px; color: #fff; margin-bottom: 3px; }
-.step-item.active .step-name { color: var(--neon); }
-.step-item.verified .step-name { color: var(--neon2); }
-.step-desc { font-size: 0.74rem; color: var(--muted); line-height: 1.4; }
-
-/* status row */
-.sidebar-status { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border); }
-.sys-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.sys-label { font-family: var(--font-m); font-size: 0.62rem; color: var(--muted); letter-spacing: 2px; }
-.sys-val { font-family: var(--font-m); font-size: 0.65rem; color: var(--neon2); }
-
-.strikes-display { margin-top: 16px; padding: 12px; background: rgba(255,34,68,0.07); border: 1px solid rgba(255,34,68,0.2); border-radius: 8px; display: none; }
-.strikes-display.visible { display: block; }
-.strikes-label { font-family: var(--font-m); font-size: 0.65rem; color: var(--danger); letter-spacing: 2px; margin-bottom: 6px; }
-.strikes-dots { display: flex; gap: 6px; }
-.strike-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,34,68,0.25); border: 1px solid rgba(255,34,68,0.3); transition: background .3s; }
-.strike-dot.hit { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
-
-/* Main scanner area */
-.scanner-main { display: flex; flex-direction: column; gap: 24px; }
-
-/* Video viewfinder */
-.viewfinder {
-  position: relative; border-radius: 16px; overflow: hidden;
-  background: #000; aspect-ratio: 4/3;
-  border: 1px solid rgba(0,242,255,0.2);
-}
-.viewfinder-corner {
-  position: absolute; width: 26px; height: 26px; z-index: 2;
-  border-color: var(--neon); border-style: solid; border-width: 0;
-}
-.viewfinder-corner.tl { top: 12px; left: 12px; border-top-width: 2px; border-left-width: 2px; border-radius: 3px 0 0 0; }
-.viewfinder-corner.tr { top: 12px; right: 12px; border-top-width: 2px; border-right-width: 2px; border-radius: 0 3px 0 0; }
-.viewfinder-corner.bl { bottom: 12px; left: 12px; border-bottom-width: 2px; border-left-width: 2px; border-radius: 0 0 0 3px; }
-.viewfinder-corner.br { bottom: 12px; right: 12px; border-bottom-width: 2px; border-right-width: 2px; border-radius: 0 0 3px 0; }
-
-.scan-line {
-  position: absolute; width: 100%; height: 2px; z-index: 3;
-  background: linear-gradient(90deg, transparent, var(--neon), transparent);
-  box-shadow: 0 0 12px var(--neon), 0 0 25px rgba(0,242,255,0.5);
-  top: 0; animation: scan-anim 3.5s ease-in-out infinite;
-}
-@keyframes scan-anim { 0% { top: 0; opacity:0.8; } 50% { opacity:1; } 100% { top: 100%; opacity:0.8; } }
-
-.viewfinder video-feed { width: 100%; height: 100%; object-fit: cover; display: block; }
-.viewfinder img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-/* status overlay */
-.vf-status-bar {
-  position: absolute; bottom: 0; left: 0; right: 0; z-index: 4;
-  background: linear-gradient(0deg, rgba(0,0,0,0.85), transparent);
-  padding: 20px 20px 16px;
-  display: flex; justify-content: space-between; align-items: flex-end;
-}
-.vf-state-label { font-family: var(--font-h); font-size: 0.65rem; letter-spacing: 3px; color: var(--neon); }
-.vf-state-val { font-family: var(--font-m); font-size: 0.7rem; color: #fff; margin-top: 2px; }
-.vf-progress-label { font-family: var(--font-m); font-size: 0.65rem; color: var(--muted); text-align: right; }
-.vf-progress-val { font-family: var(--font-h); font-size: 0.8rem; color: var(--neon2); text-align: right; margin-top: 2px; }
-
-/* SUCCESS / FAILED overlays */
-.result-overlay {
-  position: absolute; inset: 0; z-index: 10;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  opacity: 0; pointer-events: none; transition: opacity .5s;
-  backdrop-filter: blur(4px);
-}
-.result-overlay.visible { opacity: 1; pointer-events: all; }
-.result-overlay.success { background: rgba(0,20,10,0.85); }
-.result-overlay.failure { background: rgba(20,0,5,0.85); }
-
-.result-icon { font-size: 4rem; margin-bottom: 16px; }
-.result-title { font-family: var(--font-h); font-size: 1.5rem; font-weight: 900; margin-bottom: 8px; }
-.result-overlay.success .result-title { color: var(--neon2); text-shadow: 0 0 30px rgba(0,255,136,0.7); }
-.result-overlay.failure .result-title { color: var(--danger); text-shadow: 0 0 30px rgba(255,34,68,0.7); }
-.result-sub { font-family: var(--font-m); font-size: 0.75rem; color: var(--muted); letter-spacing: 2px; margin-bottom: 28px; }
-
-/* CTA area below video */
-.scanner-cta-area { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
-
-.btn-scan {
-  background: var(--neon); color: #000;
-  font-family: var(--font-h); font-weight: 700; font-size: 0.75rem; letter-spacing: 3px;
-  padding: 14px 30px; border: none; border-radius: 4px; cursor: pointer;
-  transition: transform .2s, box-shadow .2s; text-transform: uppercase;
-  display: flex; align-items: center; gap: 8px;
-}
-.btn-scan:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(0,242,255,0.5); }
-.btn-scan:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
-
-.btn-reset {
-  background: transparent; color: var(--danger);
-  font-family: var(--font-h); font-weight: 700; font-size: 0.75rem; letter-spacing: 3px;
-  padding: 13px 30px; border: 1px solid var(--danger); border-radius: 4px; cursor: pointer;
-  transition: background .2s, box-shadow .2s; text-transform: uppercase;
-  display: none; align-items: center; gap: 8px;
-}
-.btn-reset.visible { display: flex; }
-.btn-reset:hover { background: rgba(255,34,68,0.1); box-shadow: 0 0 20px rgba(255,34,68,0.3); }
-
-/* ─── FOOTER ─────────────────────────────────────── */
-footer {
-  border-top: 1px solid var(--border); padding: 40px;
-  display: flex; justify-content: space-between; align-items: center; flex-wrap: gap;
-  position: relative; z-index: 1;
-}
-.footer-logo { font-family: var(--font-h); font-size: 0.85rem; letter-spacing: 3px; color: var(--muted); }
-.footer-note { font-family: var(--font-m); font-size: 0.65rem; color: var(--muted); letter-spacing: 1px; }
-
-/* ─── ANIMATIONS ─────────────────────────────────── */
-@keyframes fadeUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
-
-.reveal {
-  opacity: 0; transform: translateY(30px);
-  transition: opacity .7s ease, transform .7s ease;
-}
-.reveal.in-view { opacity: 1; transform: translateY(0); }
-
-/* stagger children */
-.stagger > * { opacity: 0; transform: translateY(20px); transition: opacity .6s ease, transform .6s ease; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(24px);} to{opacity:1;transform:translateY(0);} }
+.reveal { opacity:0; transform:translateY(30px); transition:opacity .7s ease,transform .7s ease; }
+.reveal.in-view { opacity:1; transform:translateY(0); }
+.stagger > * { opacity:0; transform:translateY(20px); transition:opacity .6s ease,transform .6s ease; }
 .stagger.in-view > *:nth-child(1) { opacity:1; transform:none; transition-delay:.05s; }
 .stagger.in-view > *:nth-child(2) { opacity:1; transform:none; transition-delay:.18s; }
 .stagger.in-view > *:nth-child(3) { opacity:1; transform:none; transition-delay:.31s; }
 .stagger.in-view > *:nth-child(4) { opacity:1; transform:none; transition-delay:.44s; }
 
-/* ─── RESPONSIVE ─────────────────────────────────── */
 @media(max-width:900px){
-  nav { padding: 14px 24px; }
-  .nav-links { display: none; }
-  .problem-grid, .features-grid, .usecase-grid, .dashboard { grid-template-columns: 1fr; }
-  .features-grid { gap: 16px; }
-  .kyc-sidebar { position: static; }
-  .trust-badge { display: none; }
+  nav { padding:14px 24px; }
+  .nav-links { display:none; }
+  .container { padding:0 20px; }
+  .dashboard { grid-template-columns:1fr; }
+  .kyc-sidebar { position:static; order:2; }
+  .scanner-main { order:1; }
+  .viewfinder { aspect-ratio:auto !important; height:56vw; min-height:220px; }
+  .problem-grid, .features-grid, .usecase-grid { grid-template-columns:1fr; }
+  .features-grid { gap:16px; }
+  .trust-badge { display:none; }
+  .hero-stats { gap:28px; }
+  .stat-divider { display:none; }
+  .ts-meters { grid-template-columns:repeat(2,1fr); gap:14px; }
+  #instruction-card { flex-direction:column; text-align:center; }
+  .ic-icon { width:48px; height:48px; font-size:1.8rem; }
+  .reg-body { grid-template-columns:1fr; }
+  .reg-preview { width:80px; height:80px; }
+}
+@media(max-width:480px){
+  h1.hero-title { font-size:2.2rem; }
+  .viewfinder { height:64vw; }
+  .scanner-cta-area { flex-direction:column; }
+  .btn-scan, .btn-reset { width:100%; justify-content:center; }
+  .ts-meters { grid-template-columns:1fr 1fr; }
 }
 </style>
 </head>
 <body>
 
-<!-- ═══ CANVAS BACKGROUND ══════════════════════════════════════════════ -->
 <canvas id="bg-canvas"></canvas>
+<div id="toast"></div>
 
-<!-- ═══ NAV ══════════════════════════════════════════════════════════════ -->
 <nav>
   <div class="logo">PULSE<span>-GUARD</span></div>
   <div class="nav-links">
@@ -530,157 +457,92 @@ footer {
   <div class="nav-badge">● SYSTEM ONLINE</div>
 </nav>
 
-<!-- ═══ HERO ═══════════════════════════════════════════════════════════ -->
+<!-- HERO -->
 <section id="hero">
   <div class="hero-eyebrow">Next-Gen e-KYC Platform</div>
-
-  <h1 class="hero-title">
-    Digital Identity,<br/>
-    Secured by <span class="accent">Physics.</span>
-  </h1>
-
-  <p class="hero-sub">
-    Pulse-Guard deploys real-time biometric physics — heartbeat detection, cognitive challenges, and spatial mathematics — to make deepfake injection attacks impossible.
-  </p>
-
+  <h1 class="hero-title">Digital Identity,<br/>Secured by <span class="accent">Physics.</span></h1>
+  <p class="hero-sub">Pulse-Guard deploys real-time biometric physics — heartbeat detection, cognitive challenges, and spatial mathematics — to make deepfake injection attacks impossible.</p>
   <div class="hero-cta-row">
-    <button class="btn-primary" onclick="launchScanner()">
-      <span>⬡</span> Launch Biometric Scanner
-    </button>
-    <a href="#features" class="btn-secondary">
-      <span>→</span> How It Works
-    </a>
+    <button class="btn-primary" onclick="launchScanner()"><span>⬡</span> Launch Biometric Scanner</button>
+    <a href="#features" class="btn-secondary"><span>→</span> How It Works</a>
   </div>
-
   <div class="hero-stats">
-    <div class="stat"><div class="stat-val">3<span class="unit">×</span></div><div class="stat-label">Security Layers</div></div>
+    <div class="stat"><div class="stat-val">4<span class="unit">×</span></div><div class="stat-label">Security Layers</div></div>
     <div class="stat-divider"></div>
-    <div class="stat"><div class="stat-val">0<span class="unit">ms</span></div><div class="stat-label">Pre-recorded Video Pass Rate</div></div>
+    <div class="stat"><div class="stat-val">0<span class="unit">ms</span></div><div class="stat-label">Pre-recorded Pass Rate</div></div>
     <div class="stat-divider"></div>
     <div class="stat"><div class="stat-val">99<span class="unit">%+</span></div><div class="stat-label">Liveness Accuracy</div></div>
     <div class="stat-divider"></div>
     <div class="stat"><div class="stat-val">FIDO<span class="unit">2</span></div><div class="stat-label">Compliance Ready</div></div>
   </div>
-
-  <div class="trust-badge">
-    <div class="dot"></div>
-    BIOMETRIC PIPELINE ACTIVE — AES-256
-  </div>
+  <div class="trust-badge"><div class="dot"></div>BIOMETRIC PIPELINE ACTIVE — AES-256</div>
 </section>
 
-<!-- ═══ PROBLEM STATEMENT ════════════════════════════════════════════════ -->
+<!-- PROBLEM -->
 <section id="problem">
   <div class="container">
     <div class="problem-grid">
       <div class="problem-text reveal">
         <div class="section-label">// Problem Statement</div>
         <h2 class="section-title">The Deepfake<br/>Crisis in Identity Verification</h2>
-        <p>
-          Traditional KYC systems rely on a single point of verification — a selfie or a video call — that is trivially defeated by AI-generated deepfakes and pre-recorded video injection. Billions in financial fraud are executed this way every year.
-        </p>
-        <p style="margin-top:12px;">
-          As generative AI becomes commoditized, the attack surface for synthetic identity fraud expands exponentially. Existing passive checks like document OCR or single-frame liveness are no longer sufficient.
-        </p>
-
+        <p>Traditional KYC systems rely on a single point of verification — a selfie or a video call — that is trivially defeated by AI-generated deepfakes and pre-recorded video injection.</p>
+        <p style="margin-top:12px;">As generative AI becomes commoditized, the attack surface for synthetic identity fraud expands exponentially. Existing passive checks like document OCR or single-frame liveness are no longer sufficient.</p>
         <div class="threat-list stagger">
-          <div class="threat-item">
-            <div class="threat-icon">🎭</div>
-            <div>
-              <h4>Deepfake Video Injection</h4>
-              <p>Attackers route AI-synthesized face-swap video directly into the camera pipeline, bypassing any purely visual check.</p>
-            </div>
-          </div>
-          <div class="threat-item">
-            <div class="threat-icon">📼</div>
-            <div>
-              <h4>Pre-Recorded Video Replay</h4>
-              <p>Looped footage of a real person is replayed to bypass time-agnostic liveness checks. Undetectable without physiological signals.</p>
-            </div>
-          </div>
-          <div class="threat-item">
-            <div class="threat-icon">🤖</div>
-            <div>
-              <h4>Adversarial AI Models</h4>
-              <p>GAN-driven face generators now produce photorealistic sequences that fool conventional depth and texture-based detectors.</p>
-            </div>
-          </div>
+          <div class="threat-item"><div class="threat-icon">🎭</div><div><h4>Deepfake Video Injection</h4><p>Attackers route AI-synthesized face-swap video directly into the camera pipeline, bypassing any purely visual check.</p></div></div>
+          <div class="threat-item"><div class="threat-icon">📼</div><div><h4>Pre-Recorded Video Replay</h4><p>Looped footage of a real person is replayed to bypass time-agnostic liveness checks. Undetectable without physiological signals.</p></div></div>
+          <div class="threat-item"><div class="threat-icon">🤖</div><div><h4>Adversarial AI Models</h4><p>GAN-driven face generators now produce photorealistic sequences that fool conventional depth and texture-based detectors.</p></div></div>
         </div>
       </div>
-
       <div class="problem-visual reveal">
-        <div class="prob-ring"></div>
-        <div class="prob-ring"></div>
-        <div class="prob-ring"></div>
-        <div class="prob-center">
-          <div class="big">$48B</div>
-          <div>ANNUAL FRAUD<br/>EXPOSURE</div>
-        </div>
-        <!-- orbit icons -->
-        <div class="prob-orbit" style="top:20px; left:calc(50% - 24px);">🎭</div>
-        <div class="prob-orbit" style="bottom:20px; left:calc(50% - 24px);">📼</div>
-        <div class="prob-orbit" style="top:calc(50% - 24px); left:10px;">🤖</div>
-        <div class="prob-orbit" style="top:calc(50% - 24px); right:10px;">🛑</div>
+        <div class="prob-ring"></div><div class="prob-ring"></div><div class="prob-ring"></div>
+        <div class="prob-center"><div class="big">$48B</div><div>ANNUAL FRAUD<br/>EXPOSURE</div></div>
+        <div class="prob-orbit" style="top:20px;left:calc(50% - 24px);">🎭</div>
+        <div class="prob-orbit" style="bottom:20px;left:calc(50% - 24px);">📼</div>
+        <div class="prob-orbit" style="top:calc(50% - 24px);left:10px;">🤖</div>
+        <div class="prob-orbit" style="top:calc(50% - 24px);right:10px;">🛑</div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ═══ FEATURES / HOW IT WORKS ══════════════════════════════════════════ -->
+<!-- FEATURES -->
 <section id="features">
   <div class="container">
     <div class="features-header reveal">
       <div class="section-label">// Technology Stack</div>
-      <h2 class="section-title">Three Layers. Zero Gaps.</h2>
-      <p class="section-sub">Every Pulse-Guard session stacks three independently sufficient security challenges — physics, cognition, and spatial awareness — into one seamless flow.</p>
+      <h2 class="section-title">Four Layers. Zero Gaps.</h2>
+      <p class="section-sub">Pulse-Guard stacks four independently sufficient security challenges — identity, physics, cognition, and spatial — into one seamless flow.</p>
     </div>
-
     <div class="features-grid stagger">
-      <!-- Card 1 -->
       <div class="feature-card">
-        <div class="feature-num">01 — PASSIVE LIVENESS</div>
+        <div class="feature-num">01 — IDENTITY MATCH</div>
+        <div class="feature-icon-wrap">🫵</div>
+        <h3>Face Recognition</h3>
+        <p>The registered user's face encoding is compared against the live camera feed using 128-dimension face embeddings. Access is blocked until a confirmed match is detected.</p>
+        <div class="feature-tags"><span class="tag">face_recognition</span><span class="tag">128-D Embeddings</span><span class="tag">Cosine Distance</span></div>
+        <div class="feature-bar"><div class="feature-bar-fill"></div></div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-num">02 — PASSIVE LIVENESS</div>
         <div class="feature-icon-wrap">💓</div>
         <h3>rPPG Pulse Detection</h3>
         <p>Remote Photoplethysmography (rPPG) measures microscopic color fluctuations in the user's face caused by blood flow. No camera sensor can fake a heartbeat.</p>
-        <div class="feature-tags">
-          <span class="tag">OpenCV</span>
-          <span class="tag">MediaPipe</span>
-          <span class="tag">Signal Processing</span>
-        </div>
+        <div class="feature-tags"><span class="tag">OpenCV</span><span class="tag">MediaPipe</span><span class="tag">Signal Processing</span></div>
         <div class="feature-bar"><div class="feature-bar-fill"></div></div>
       </div>
-
-      <!-- Card 2 -->
       <div class="feature-card">
-        <div class="feature-num">02 — COGNITIVE LIVENESS</div>
+        <div class="feature-num">03 — COGNITIVE LIVENESS</div>
         <div class="feature-icon-wrap">✋</div>
         <h3>Gesture Challenge</h3>
         <p>A dynamic randomized challenge: hold up 1–5 fingers in real time. Requires active cognitive response — unscriptable by any pre-recorded or synthetic video.</p>
-        <div class="feature-tags">
-          <span class="tag">Hand Landmark AI</span>
-          <span class="tag">Random Seed</span>
-          <span class="tag">Multi-frame Hold</span>
-        </div>
-        <div class="feature-bar"><div class="feature-bar-fill"></div></div>
-      </div>
-
-      <!-- Card 3 -->
-      <div class="feature-card">
-        <div class="feature-num">03 — SPATIAL AWARENESS</div>
-        <div class="feature-icon-wrap">🧭</div>
-        <h3>3D Head Tracking</h3>
-        <p>solvePnP mathematics extracts true 3D head yaw and pitch from 2D landmarks. Randomized left/right sequences break all known 2D deepfake models outright.</p>
-        <div class="feature-tags">
-          <span class="tag">3D PnP Math</span>
-          <span class="tag">RQ Decomposition</span>
-          <span class="tag">Rodrigues Rotation</span>
-        </div>
+        <div class="feature-tags"><span class="tag">Hand Landmark AI</span><span class="tag">Random Seed</span><span class="tag">Multi-frame Hold</span></div>
         <div class="feature-bar"><div class="feature-bar-fill"></div></div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ═══ REAL-WORLD USE CASES ═════════════════════════════════════════════ -->
+<!-- USE CASES -->
 <section id="usecases">
   <div class="container">
     <div class="usecases-header reveal">
@@ -688,146 +550,108 @@ footer {
       <h2 class="section-title">Where Pulse-Guard<br/>Protects the World</h2>
       <p class="section-sub">From banking onboarding to border control — any domain where identity fraud costs lives or capital.</p>
     </div>
-
     <div class="usecase-grid stagger">
-      <div class="usecase-card">
-        <div class="uc-icon">🏦</div>
-        <div class="uc-body">
-          <h4>Digital Banking & FinTech</h4>
-          <p>Remote account opening and loan disbursals are the highest-value deepfake targets. Pulse-Guard integrates directly into onboarding flows, eliminating synthetic identity fraud before a single rupee is disbursed.</p>
-          <div class="uc-compliance"><span class="compliance-badge">RBI KYC</span><span class="compliance-badge">FATF</span><span class="compliance-badge">PSD2</span></div>
-        </div>
-      </div>
-
-      <div class="usecase-card">
-        <div class="uc-icon">🛂</div>
-        <div class="uc-body">
-          <h4>Border Control & e-Passport</h4>
-          <p>Aviation and immigration authorities require provably live biometric capture. 3D spatial checks prevent the use of printed photos, masks, or face-swap overlays at digital kiosks.</p>
-          <div class="uc-compliance"><span class="compliance-badge">ICAO 9303</span><span class="compliance-badge">ISO 30107</span></div>
-        </div>
-      </div>
-
-      <div class="usecase-card">
-        <div class="uc-icon">🏥</div>
-        <div class="uc-body">
-          <h4>Telehealth & Prescription Access</h4>
-          <p>Controlled substance prescriptions issued via video consultation require verified patient presence. rPPG pulse confirmation guarantees a live human, not a recorded proxy, is receiving medical access.</p>
-          <div class="uc-compliance"><span class="compliance-badge">HIPAA</span><span class="compliance-badge">GDPR</span></div>
-        </div>
-      </div>
-
-      <div class="usecase-card">
-        <div class="uc-icon">🗳️</div>
-        <div class="uc-body">
-          <h4>Remote Proctoring & E-Voting</h4>
-          <p>High-stakes exams and civic elections require continuous identity assurance across a session — not just at login. Pulse-Guard's multi-layer model enables persistent, ambient liveness monitoring.</p>
-          <div class="uc-compliance"><span class="compliance-badge">NIST SP 800-63</span><span class="compliance-badge">eIDAS</span></div>
-        </div>
-      </div>
+      <div class="usecase-card"><div class="uc-icon">🏦</div><div class="uc-body"><h4>Digital Banking & FinTech</h4><p>Remote account opening and loan disbursals are the highest-value deepfake targets. Pulse-Guard integrates directly into onboarding flows, eliminating synthetic identity fraud before a single rupee is disbursed.</p><div class="uc-compliance"><span class="compliance-badge">RBI KYC</span><span class="compliance-badge">FATF</span><span class="compliance-badge">PSD2</span></div></div></div>
+      <div class="usecase-card"><div class="uc-icon">🛂</div><div class="uc-body"><h4>Border Control & e-Passport</h4><p>Aviation and immigration authorities require provably live biometric capture. 3D spatial checks prevent the use of printed photos, masks, or face-swap overlays at digital kiosks.</p><div class="uc-compliance"><span class="compliance-badge">ICAO 9303</span><span class="compliance-badge">ISO 30107</span></div></div></div>
+      <div class="usecase-card"><div class="uc-icon">🏥</div><div class="uc-body"><h4>Telehealth & Prescription Access</h4><p>Controlled substance prescriptions require verified patient presence. rPPG pulse confirmation guarantees a live human, not a recorded proxy, is receiving medical access.</p><div class="uc-compliance"><span class="compliance-badge">HIPAA</span><span class="compliance-badge">GDPR</span></div></div></div>
+      <div class="usecase-card"><div class="uc-icon">🗳️</div><div class="uc-body"><h4>Remote Proctoring & E-Voting</h4><p>High-stakes exams and civic elections require continuous identity assurance across a session. Pulse-Guard's multi-layer model enables persistent, ambient liveness monitoring.</p><div class="uc-compliance"><span class="compliance-badge">NIST SP 800-63</span><span class="compliance-badge">eIDAS</span></div></div></div>
     </div>
   </div>
 </section>
 
-<!-- ═══ KYC DASHBOARD ════════════════════════════════════════════════════ -->
+<!-- SCANNER -->
 <section id="scanner">
   <div class="container">
     <div class="scanner-header reveal">
       <div class="section-label">// Live Biometric Session</div>
       <h2 class="section-title">Biometric Scanner</h2>
-      <p class="section-sub" style="margin:0 auto;">Complete all four stages to verify your identity. Ensure your face is well-lit and your webcam is active before starting.</p>
+      <p class="section-sub" style="margin:0 auto;">Complete all four stages to verify your identity. Register a user face before starting the session.</p>
+    </div>
+
+    <!-- ① CAMERA PERMISSION GATE -->
+    <div id="cam-gate">
+      <div class="gate-icon">📷</div>
+      <h3>Camera Access Required</h3>
+      <p>Pulse-Guard needs access to your webcam to perform biometric verification. No video is transmitted externally — all processing happens locally on this device.</p>
+      <button class="btn-grant" onclick="requestCamera()">Grant Camera Access</button>
+      <div class="cam-troubleshoot">Camera blocked? <a href="#" onclick="showCamHelp()">Troubleshoot →</a></div>
+    </div>
+
+    <!-- ② REGISTRATION PANEL (NEW) -->
+    <div id="register-panel">
+      <div class="reg-panel-header">
+        <div class="reg-panel-title-group">
+          <div class="reg-panel-icon">🫵</div>
+          <div>
+            <div class="reg-panel-title">Register User Face</div>
+            <div class="reg-panel-subtitle">Upload a clear photo of the authorised user before starting a session</div>
+          </div>
+        </div>
+        <div class="reg-status-badge unregistered" id="reg-status-badge">● NOT REGISTERED</div>
+      </div>
+
+      <div class="reg-body">
+        <div class="reg-preview" id="reg-preview">
+          <span>👤</span>
+        </div>
+        <div class="reg-form-col">
+          <p class="reg-description">
+            Upload a well-lit, front-facing photo (JPG / PNG / WebP). The system extracts a 128-dimension face embedding stored locally — no data leaves this machine. Each registered face is valid until you reset or register a new one.
+          </p>
+          <div class="reg-actions">
+            <input type="file" id="face-upload" accept="image/jpeg,image/png,image/webp" onchange="previewPhoto(event)"/>
+            <label for="face-upload" class="btn-upload-label">📁 Choose Photo</label>
+            <button class="btn-register-face" id="btn-register-face" onclick="registerFace()">⬡ Register Face</button>
+          </div>
+          <div class="reg-feedback" id="reg-feedback"></div>
+        </div>
+      </div>
     </div>
 
     <div class="dashboard">
-      <!-- ── Sidebar Stepper ── -->
+      <!-- Sidebar -->
       <div class="kyc-sidebar">
         <div class="sidebar-title">KYC Progress</div>
-
         <div class="step-item active" id="step-id">
-          <div class="step-dot">01</div>
-          <div class="step-connector"></div>
-          <div class="step-body">
-            <div class="step-name">ID Verification</div>
-            <div class="step-desc">Hold government ID inside the scanning frame</div>
-          </div>
+          <div class="step-dot">01</div><div class="step-connector"></div>
+          <div class="step-body"><div class="step-name">Face Verification</div><div class="step-desc">Live face matched against registered user encoding</div></div>
         </div>
-
         <div class="step-item" id="step-pulse">
-          <div class="step-dot">02</div>
-          <div class="step-connector"></div>
-          <div class="step-body">
-            <div class="step-name">Pulse (rPPG)</div>
-            <div class="step-desc">Passive heartbeat detection via micro-color shifts</div>
-          </div>
+          <div class="step-dot">02</div><div class="step-connector"></div>
+          <div class="step-body"><div class="step-name">Pulse (rPPG)</div><div class="step-desc">Passive heartbeat detection via micro-color shifts</div></div>
         </div>
-
         <div class="step-item" id="step-gesture">
-          <div class="step-dot">03</div>
-          <div class="step-connector"></div>
-          <div class="step-body">
-            <div class="step-name">Gesture Challenge</div>
-            <div class="step-desc">Show the requested number of fingers</div>
-          </div>
+          <div class="step-dot">03</div><div class="step-connector"></div>
+          <div class="step-body"><div class="step-name">Gesture Challenge</div><div class="step-desc">Show the requested number of fingers</div></div>
         </div>
-
         <div class="step-item" id="step-head">
           <div class="step-dot">04</div>
-          <div class="step-body">
-            <div class="step-name">Spatial Awareness</div>
-            <div class="step-desc">Follow the head-turn sequence in 3D</div>
-          </div>
+          <div class="step-body"><div class="step-name">Spatial Awareness</div><div class="step-desc">Follow the head-turn sequence in 3D</div></div>
         </div>
-
         <div class="sidebar-status">
-          <div class="sys-row">
-            <span class="sys-label">ENCRYPTION</span>
-            <span class="sys-val">AES-256</span>
-          </div>
-          <div class="sys-row">
-            <span class="sys-label">STATE</span>
-            <span class="sys-val" id="sys-state-val">ID_SCAN</span>
-          </div>
-          <div class="sys-row">
-            <span class="sys-label">GESTURE SCORE</span>
-            <span class="sys-val" id="sys-progress-val">—</span>
-          </div>
+          <div class="sys-row"><span class="sys-label">ENCRYPTION</span><span class="sys-val">AES-256</span></div>
+          <div class="sys-row"><span class="sys-label">STATE</span><span class="sys-val" id="sys-state-val">ID_SCAN</span></div>
+          <div class="sys-row"><span class="sys-label">FACE MATCH</span><span class="sys-val" id="sys-face-val">—</span></div>
+          <div class="sys-row"><span class="sys-label">GESTURE</span><span class="sys-val" id="sys-progress-val">—</span></div>
         </div>
-
         <div class="strikes-display" id="strikes-display">
           <div class="strikes-label">⚠ STRIKE WARNING</div>
-          <div class="strikes-dots">
-            <div class="strike-dot" id="sd1"></div>
-            <div class="strike-dot" id="sd2"></div>
-          </div>
+          <div class="strikes-dots"><div class="strike-dot" id="sd1"></div><div class="strike-dot" id="sd2"></div></div>
         </div>
       </div>
 
-      <!-- ── Scanner Main ── -->
+      <!-- Scanner Main -->
       <div class="scanner-main">
-        <!-- Viewfinder -->
+        <!-- Video -->
         <div class="viewfinder" id="viewfinder">
-          <div class="viewfinder-corner tl"></div>
-          <div class="viewfinder-corner tr"></div>
-          <div class="viewfinder-corner bl"></div>
-          <div class="viewfinder-corner br"></div>
+          <div class="viewfinder-corner tl"></div><div class="viewfinder-corner tr"></div>
+          <div class="viewfinder-corner bl"></div><div class="viewfinder-corner br"></div>
           <div class="scan-line"></div>
-
-          <!-- Flask video feed -->
           <img src="/video_feed" alt="Live Biometric Feed" id="video-feed-img"/>
-
-          <!-- Overlaid status bar -->
           <div class="vf-status-bar">
-            <div>
-              <div class="vf-state-label">CURRENT STAGE</div>
-              <div class="vf-state-val" id="vf-state">Awaiting Session Start</div>
-            </div>
-            <div>
-              <div class="vf-progress-label">GESTURE PROGRESS</div>
-              <div class="vf-progress-val" id="vf-progress">—</div>
-            </div>
+            <div><div class="vf-state-label">CURRENT STAGE</div><div class="vf-state-val" id="vf-state">Awaiting Session Start</div></div>
+            <div><div class="vf-progress-label">STATUS</div><div class="vf-progress-val" id="vf-progress">—</div></div>
           </div>
-
-          <!-- Result overlays -->
           <div class="result-overlay success" id="overlay-success">
             <div class="result-icon">✅</div>
             <div class="result-title">Identity Verified</div>
@@ -840,23 +664,83 @@ footer {
           </div>
         </div>
 
+        <!-- Instruction Card -->
+        <div id="instruction-card">
+          <div class="ic-icon pulsing" id="ic-icon">🫵</div>
+          <div class="ic-body">
+            <div class="ic-label" id="ic-label">STAGE 1 OF 4 · FACE VERIFICATION</div>
+            <div class="ic-text" id="ic-text">Register a user face above, then face the camera to begin matching</div>
+            <div class="ic-subtext" id="ic-subtext">The system will compare your live face to the registered encoding in real time.</div>
+          </div>
+        </div>
+
+        <!-- Face Match Strip (shown during ID_SCAN) -->
+        <div id="face-match-strip" class="visible">
+          <div class="fms-label">FACE MATCH</div>
+          <div class="fms-bar-track"><div class="fms-bar-fill" id="fms-bar"></div></div>
+          <div class="fms-val" id="fms-val" style="color:var(--muted)">0%</div>
+          <div class="fms-status scanning" id="fms-status">SCANNING</div>
+        </div>
+
         <!-- CTA Buttons -->
         <div class="scanner-cta-area">
           <button class="btn-scan" id="btn-confirm" onclick="confirmID()">
-            <span>▶</span> Confirm ID &amp; Start Biometrics
+            <span>▶</span> Confirm Identity &amp; Start Biometrics
           </button>
-          <button class="btn-reset" id="btn-reset" onclick="resetSession()">
-            ↺ Restart Session
-          </button>
+          <button class="btn-reset" id="btn-reset" onclick="resetSession()">↺ Restart Session</button>
+        </div>
+
+        <!-- Threat Score Panel -->
+        <div id="threat-score">
+          <div class="ts-header">
+            <div class="ts-title">⬡ Real-Time Threat Score</div>
+            <div class="ts-badge">LIVE ANALYSIS</div>
+          </div>
+          <div class="ts-meters">
+            <!-- Face Identity (new) -->
+            <div class="ts-meter">
+              <div class="ts-meter-head">
+                <div class="ts-meter-label">Face Identity</div>
+                <div class="ts-meter-val" id="ts-face-val">0%</div>
+              </div>
+              <div class="ts-bar-track"><div class="ts-bar-fill" id="ts-face-bar"></div></div>
+            </div>
+            <div class="ts-meter">
+              <div class="ts-meter-head">
+                <div class="ts-meter-label">Pulse Confidence</div>
+                <div class="ts-meter-val" id="ts-pulse-val">0%</div>
+              </div>
+              <div class="ts-bar-track"><div class="ts-bar-fill" id="ts-pulse-bar"></div></div>
+            </div>
+            <div class="ts-meter">
+              <div class="ts-meter-head">
+                <div class="ts-meter-label">Gesture Match</div>
+                <div class="ts-meter-val" id="ts-gesture-val">0%</div>
+              </div>
+              <div class="ts-bar-track"><div class="ts-bar-fill" id="ts-gesture-bar"></div></div>
+            </div>
+            <div class="ts-meter">
+              <div class="ts-meter-head">
+                <div class="ts-meter-label">Spatial Coherence</div>
+                <div class="ts-meter-val" id="ts-spatial-val">0%</div>
+              </div>
+              <div class="ts-bar-track"><div class="ts-bar-fill" id="ts-spatial-bar"></div></div>
+            </div>
+          </div>
+          <div class="ts-composite">
+            <div class="ts-composite-label">COMPOSITE TRUST SCORE</div>
+            <div class="ts-composite-bar-track"><div class="ts-composite-bar-fill" id="ts-composite-bar"></div></div>
+            <div class="ts-composite-score low" id="ts-composite-val">0%</div>
+          </div>
         </div>
 
         <!-- Info chips -->
-        <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:4px;">
-          <div style="background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:10px 16px; font-family:var(--font-m); font-size:0.65rem; color:var(--muted); letter-spacing:1px; display:flex; gap:8px; align-items:center;">
-            <span style="color:var(--neon2);">●</span> Live feed is processed locally — no data is transmitted externally.
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px;">
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 16px;font-family:var(--font-m);font-size:0.65rem;color:var(--muted);letter-spacing:1px;display:flex;gap:8px;align-items:center;">
+            <span style="color:var(--neon2);">●</span> All face data processed locally — no biometrics transmitted externally.
           </div>
-          <div style="background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:10px 16px; font-family:var(--font-m); font-size:0.65rem; color:var(--muted); letter-spacing:1px; display:flex; gap:8px; align-items:center;">
-            <span style="color:var(--neon);">●</span> Good lighting &amp; neutral background recommended.
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 16px;font-family:var(--font-m);font-size:0.65rem;color:var(--muted);letter-spacing:1px;display:flex;gap:8px;align-items:center;">
+            <span style="color:var(--neon);">●</span> Good lighting &amp; neutral background recommended for best accuracy.
           </div>
         </div>
       </div>
@@ -864,163 +748,464 @@ footer {
   </div>
 </section>
 
-<!-- ═══ FOOTER ═══════════════════════════════════════════════════════════ -->
 <footer>
   <div class="footer-logo">PULSE-GUARD © 2025</div>
-  <div class="footer-note">Powered by OpenCV · MediaPipe · Flask · rPPG Signal Analysis</div>
+  <div class="footer-note">Powered by OpenCV · MediaPipe · face_recognition · Flask · rPPG Signal Analysis</div>
 </footer>
 
-<!-- ═══ SCRIPTS ═══════════════════════════════════════════════════════════ -->
 <script>
-/* ─── CANVAS PARTICLE/GRID BACKGROUND ─── */
+/* ── CANVAS ── */
 (function(){
-  const canvas = document.getElementById('bg-canvas');
-  const ctx = canvas.getContext('2d');
-  let W, H, nodes = [], edges = [];
-  const NODE_COUNT = 70;
-
-  function resize(){
-    W = canvas.width = window.innerWidth;
-    H = canvas.height = window.innerHeight;
-  }
-  resize();
-  window.addEventListener('resize', resize);
-
-  for(let i=0; i<NODE_COUNT; i++){
-    nodes.push({
-      x: Math.random()*W, y: Math.random()*H,
-      vx: (Math.random()-.5)*.4, vy: (Math.random()-.5)*.4,
-      r: Math.random()*1.5+.5
-    });
-  }
-
+  const canvas=document.getElementById('bg-canvas'),ctx=canvas.getContext('2d');
+  let W,H,nodes=[];
+  function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  for(let i=0;i<70;i++)nodes.push({x:Math.random()*1920,y:Math.random()*1080,vx:(Math.random()-.5)*.4,vy:(Math.random()-.5)*.4,r:Math.random()*1.5+.5});
   function draw(){
     ctx.clearRect(0,0,W,H);
-
-    // Grid lines
-    ctx.strokeStyle = 'rgba(0,242,255,0.03)';
-    ctx.lineWidth = 1;
-    const spacing = 80;
-    for(let x=0; x<W; x+=spacing){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
-    for(let y=0; y<H; y+=spacing){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
-
-    // Move nodes
-    nodes.forEach(n=>{
-      n.x+=n.vx; n.y+=n.vy;
-      if(n.x<0||n.x>W) n.vx*=-1;
-      if(n.y<0||n.y>H) n.vy*=-1;
-    });
-
-    // Edges
-    const maxDist = 160;
-    for(let i=0; i<nodes.length; i++){
-      for(let j=i+1; j<nodes.length; j++){
-        const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y;
-        const dist=Math.sqrt(dx*dx+dy*dy);
-        if(dist<maxDist){
-          const alpha=(1-dist/maxDist)*0.25;
-          ctx.strokeStyle=`rgba(0,242,255,${alpha})`;
-          ctx.lineWidth=.5;
-          ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y); ctx.lineTo(nodes[j].x,nodes[j].y); ctx.stroke();
-        }
-      }
+    ctx.strokeStyle='rgba(0,242,255,0.03)';ctx.lineWidth=1;
+    for(let x=0;x<W;x+=80){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(let y=0;y<H;y+=80){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    nodes.forEach(n=>{n.x+=n.vx;n.y+=n.vy;if(n.x<0||n.x>W)n.vx*=-1;if(n.y<0||n.y>H)n.vy*=-1;});
+    for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){
+      const dx=nodes[i].x-nodes[j].x,dy=nodes[i].y-nodes[j].y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<160){ctx.strokeStyle=`rgba(0,242,255,${(1-d/160)*.25})`;ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(nodes[i].x,nodes[i].y);ctx.lineTo(nodes[j].x,nodes[j].y);ctx.stroke();}
     }
-
-    // Nodes
-    nodes.forEach(n=>{
-      ctx.beginPath(); ctx.arc(n.x,n.y,n.r,0,Math.PI*2);
-      ctx.fillStyle='rgba(0,242,255,0.55)'; ctx.fill();
-    });
-
+    nodes.forEach(n=>{ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,Math.PI*2);ctx.fillStyle='rgba(0,242,255,0.55)';ctx.fill();});
     requestAnimationFrame(draw);
   }
   draw();
 })();
 
-/* ─── SCROLL REVEAL ─── */
-const revealObserver = new IntersectionObserver(entries=>{
-  entries.forEach(e=>{
-    if(e.isIntersecting){ e.target.classList.add('in-view'); }
-  });
-},{threshold:.12});
-document.querySelectorAll('.reveal, .stagger').forEach(el=>revealObserver.observe(el));
+/* ── SCROLL REVEAL ── */
+const revealObserver=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in-view');}),{threshold:.12});
+document.querySelectorAll('.reveal,.stagger').forEach(el=>revealObserver.observe(el));
 
-/* ─── LAUNCH SCANNER ─── */
-function launchScanner(){
+/* ── NAV ── */
+const sections=['problem','features','usecases','scanner'];
+const navLinks=document.querySelectorAll('.nav-links a');
+window.addEventListener('scroll',()=>{
+  let cur='';
+  sections.forEach(id=>{const el=document.getElementById(id);if(el&&window.scrollY>=el.offsetTop-140)cur=id;});
+  navLinks.forEach(a=>{a.style.color=a.getAttribute('href')==='#'+cur?'var(--neon)':'';});
+});
+
+/* ══════════════════════════════════════
+   TOAST NOTIFICATION
+══════════════════════════════════════ */
+let toastTimer = null;
+function showToast(msg, type='warn') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `show toast-${type}`;
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = `toast-${type}`; }, 4000);
+}
+
+/* ══════════════════════════════════════
+   CAMERA PERMISSION
+══════════════════════════════════════ */
+let cameraGranted = false;
+
+async function checkCameraOnLaunch() {
+  try {
+    if (navigator.permissions) {
+      const perm = await navigator.permissions.query({ name: 'camera' });
+      if (perm.state === 'granted') { cameraGranted = true; return; }
+      if (perm.state === 'denied')  { showCamGate('denied'); return; }
+    }
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    stream.getTracks().forEach(t => t.stop());
+    cameraGranted = true;
+  } catch(e) { showCamGate('error'); }
+}
+
+function showCamGate(reason) {
+  const gate = document.getElementById('cam-gate');
+  gate.classList.add('visible');
+  if (reason === 'denied') {
+    gate.querySelector('p').textContent =
+      'Camera access was previously denied. Click the camera icon in the address bar to allow access, then refresh.';
+    gate.querySelector('.btn-grant').textContent = 'How to Enable Camera →';
+    gate.querySelector('.btn-grant').onclick = showCamHelp;
+  }
+}
+
+async function requestCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    stream.getTracks().forEach(t => t.stop());
+    cameraGranted = true;
+    document.getElementById('cam-gate').style.display = 'none';
+  } catch(e) {
+    document.getElementById('cam-gate').querySelector('p').innerHTML =
+      '<strong style="color:var(--danger)">Permission denied.</strong> Open browser settings → Site Settings → Camera → Allow.';
+  }
+}
+
+function showCamHelp() {
+  alert('To enable camera:\n• Chrome: Click 🔒 in address bar → Permissions → Camera → Allow\n• Firefox: Click camera icon in toolbar\n• Safari: Preferences → Websites → Camera → Allow\n\nThen refresh.');
+}
+
+/* ══════════════════════════════════════
+   REGISTRATION
+══════════════════════════════════════ */
+let selectedPhotoFile = null;
+
+function previewPhoto(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  selectedPhotoFile = file;
+
+  const preview = document.getElementById('reg-preview');
+  const reader = new FileReader();
+  reader.onload = e => {
+    preview.innerHTML = `
+      <img src="${e.target.result}" alt="Preview"/>
+      <div class="preview-label">PREVIEW</div>`;
+    preview.classList.add('has-image');
+  };
+  reader.readAsDataURL(file);
+
+  const btn = document.getElementById('btn-register-face');
+  btn.classList.add('visible');
+
+  // Clear previous feedback
+  const fb = document.getElementById('reg-feedback');
+  fb.className = 'reg-feedback';
+  fb.style.display = 'none';
+}
+
+async function registerFace() {
+  if (!selectedPhotoFile) return;
+  const btn = document.getElementById('btn-register-face');
+  btn.disabled = true;
+  btn.textContent = '⏳ Registering…';
+
+  const form = new FormData();
+  form.append('photo', selectedPhotoFile);
+
+  try {
+    const res  = await fetch('/register_face', { method: 'POST', body: form });
+    const data = await res.json();
+    const fb   = document.getElementById('reg-feedback');
+
+    if (data.success) {
+      fb.textContent = '✓ ' + data.message;
+      fb.className = 'reg-feedback success visible';
+      fb.style.display = 'block';
+
+      // Update panel + badge
+      document.getElementById('register-panel').classList.add('registered');
+      const badge = document.getElementById('reg-status-badge');
+      badge.textContent = '● REGISTERED';
+      badge.className = 'reg-status-badge registered';
+
+      // Update preview border
+      document.getElementById('reg-preview').classList.add('registered');
+      document.getElementById('reg-preview').querySelector('.preview-label').textContent = 'REGISTERED ✓';
+
+      showToast('User face registered. You may now start the biometric session.', 'ok');
+    } else {
+      fb.textContent = '✗ ' + data.message;
+      fb.className = 'reg-feedback error visible';
+      fb.style.display = 'block';
+      document.getElementById('register-panel').classList.add('error');
+      showToast(data.message, 'error');
+    }
+  } catch(e) {
+    showToast('Could not reach backend. Is app.py running on port 5000?', 'error');
+  }
+
+  btn.disabled = false;
+  btn.textContent = '⬡ Register Face';
+}
+
+/* ══════════════════════════════════════
+   INSTRUCTION CARD CONFIG
+══════════════════════════════════════ */
+const INSTRUCTIONS = {
+  ID_SCAN: {
+    icon:'🫵', label:'STAGE 1 OF 4 · FACE VERIFICATION', style:'',
+    text:'Face the camera — the system is comparing you to the registered user',
+    sub:'Ensure good lighting. The confidence bar must turn green before you can proceed.'
+  },
+  PULSE: {
+    icon:'💓', label:'STAGE 2 OF 4 · PASSIVE LIVENESS', style:'',
+    text:'Stay still and look directly at the camera',
+    sub:'Detecting micro-color fluctuations from your heartbeat. Takes about 3 seconds.'
+  },
+  GESTURE: {
+    icon:'✋', label:'STAGE 3 OF 4 · COGNITIVE CHALLENGE', style:'',
+    text:'Show the number of fingers displayed on screen',
+    sub:'Raise and hold steady for a moment. The target changes after each successful hold.'
+  },
+  HEAD_POSE: {
+    icon:'🧭', label:'STAGE 4 OF 4 · SPATIAL AWARENESS', style:'',
+    text:'Slowly turn your head in the direction shown on screen',
+    sub:'Move at a natural pace. Return to center when prompted.'
+  },
+  SUCCESS: {
+    icon:'✅', label:'VERIFICATION COMPLETE', style:'success-card',
+    text:'Identity confirmed — all four biometric layers passed',
+    sub:'Your session token has been issued. This verification is valid for 24 hours.'
+  },
+  FAILED: {
+    icon:'🛑', label:'VERIFICATION FAILED', style:'warn-card',
+    text:'Anomaly detected — session has been terminated',
+    sub:'Too many incorrect attempts were made. Restart the session to try again.'
+  }
+};
+
+function updateInstructionCard(state, gestureTarget) {
+  const cfg  = INSTRUCTIONS[state] || INSTRUCTIONS.ID_SCAN;
+  const card = document.getElementById('instruction-card');
+  const icon = document.getElementById('ic-icon');
+
+  let text = cfg.text;
+  if (state === 'GESTURE' && gestureTarget) {
+    const w = ['','ONE','TWO','THREE','FOUR','FIVE'];
+    text = `🫳 Hold up ${w[gestureTarget] || gestureTarget} finger${gestureTarget > 1 ? 's' : ''} and keep them steady`;
+  }
+
+  card.id = 'instruction-card';
+  card.className = cfg.style || '';
+  card.id = 'instruction-card';
+
+  icon.textContent = cfg.icon;
+  icon.className = 'ic-icon' + (state !== 'SUCCESS' && state !== 'FAILED' ? ' pulsing' : '');
+
+  document.getElementById('ic-label').textContent   = cfg.label;
+  document.getElementById('ic-text').textContent    = text;
+  document.getElementById('ic-subtext').textContent = cfg.sub;
+}
+
+/* ══════════════════════════════════════
+   THREAT SCORE METERS
+══════════════════════════════════════ */
+const threatState = { face: 0, pulse: 0, gesture: 0, spatial: 0 };
+
+function setMeter(valId, barId, value) {
+  document.getElementById(valId).textContent = value + '%';
+  document.getElementById(barId).style.width = value + '%';
+}
+
+function updateComposite() {
+  const avg = Math.round((threatState.face + threatState.pulse + threatState.gesture + threatState.spatial) / 4);
+  const el  = document.getElementById('ts-composite-val');
+  const bar = document.getElementById('ts-composite-bar');
+  el.textContent = avg + '%';
+  bar.style.width = avg + '%';
+  el.className = 'ts-composite-score ' + (avg >= 70 ? 'high' : avg >= 40 ? 'mid' : 'low');
+  bar.style.background = avg >= 70 ? 'var(--neon2)' : avg >= 40 ? 'var(--warn)' : 'var(--danger)';
+}
+
+function animateMeterTo(which, target, duration=1200) {
+  const start = threatState[which];
+  const t0    = performance.now();
+  const map   = {
+    face:    ['ts-face-val',    'ts-face-bar'],
+    pulse:   ['ts-pulse-val',   'ts-pulse-bar'],
+    gesture: ['ts-gesture-val', 'ts-gesture-bar'],
+    spatial: ['ts-spatial-val', 'ts-spatial-bar'],
+  };
+  function step(now) {
+    const t    = Math.min((now - t0) / duration, 1);
+    const ease = 1 - Math.pow(1 - t, 3);
+    const cur  = Math.round(start + (target - start) * ease);
+    setMeter(map[which][0], map[which][1], cur);
+    updateComposite();
+    if (t < 1) requestAnimationFrame(step);
+    else threatState[which] = target;
+  }
+  requestAnimationFrame(step);
+}
+
+/* ── Face match strip live update ── */
+function updateFaceMatchStrip(confidence, status) {
+  const bar  = document.getElementById('fms-bar');
+  const val  = document.getElementById('fms-val');
+  const pill = document.getElementById('fms-status');
+
+  bar.style.width = confidence + '%';
+
+  const isMatch = status === 'MATCH';
+  const isNoMatch = status === 'NO_MATCH';
+  bar.style.background = isMatch ? 'var(--neon2)' : isNoMatch ? 'var(--danger)' : 'var(--warn)';
+  val.style.color       = isMatch ? 'var(--neon2)' : isNoMatch ? 'var(--danger)' : 'var(--muted)';
+  val.textContent       = confidence.toFixed(0) + '%';
+
+  const pillLabels = {
+    MATCH:            'MATCH ✓',
+    NO_MATCH:         'MISMATCH ✗',
+    SCANNING:         'SCANNING',
+    NO_FACE_DETECTED: 'NO FACE',
+    NO_USER_REGISTERED: 'NOT REGISTERED',
+  };
+  pill.textContent = pillLabels[status] || status;
+  pill.className   = 'fms-status ' + (isMatch ? 'match' : isNoMatch ? 'no-match' : 'scanning');
+
+  // Also drive the face meter in the threat score panel
+  const target = isMatch ? confidence : Math.min(confidence * 0.7, 45);
+  if (Math.abs(threatState.face - target) > 3) animateMeterTo('face', target, 800);
+
+  // Sidebar
+  const sysVal = document.getElementById('sys-face-val');
+  sysVal.textContent = isMatch ? `${confidence.toFixed(0)}% ✓` : `${confidence.toFixed(0)}%`;
+  sysVal.style.color = isMatch ? 'var(--neon2)' : 'var(--danger)';
+}
+
+function updateMetersForState(state, gestureProgress, faceConf) {
+  if (state === 'PULSE') {
+    animateMeterTo('face', 100, 600);
+    animateMeterTo('pulse', 45);
+  }
+  if (state === 'GESTURE') {
+    animateMeterTo('face', 100, 400);
+    animateMeterTo('pulse', 88);
+    const parts = gestureProgress.split('/');
+    if (parts.length === 2) {
+      const pct = Math.round((parseInt(parts[0]) / parseInt(parts[1])) * 100);
+      animateMeterTo('gesture', Math.max(pct, 10));
+    }
+  }
+  if (state === 'HEAD_POSE') {
+    animateMeterTo('face', 100, 300);
+    animateMeterTo('pulse', 95);
+    animateMeterTo('gesture', 100);
+    animateMeterTo('spatial', 40);
+  }
+  if (state === 'SUCCESS') {
+    animateMeterTo('face', 100, 600);
+    animateMeterTo('pulse', 97, 1800);
+    animateMeterTo('gesture', 100, 1400);
+    animateMeterTo('spatial', 96, 2000);
+  }
+  if (state === 'FAILED') {
+    animateMeterTo('spatial', 12, 800);
+  }
+}
+
+/* ══════════════════════════════════════
+   LAUNCH + SESSION STATE MACHINE
+══════════════════════════════════════ */
+function launchScanner() {
   const sec = document.getElementById('scanner');
   sec.classList.add('visible');
-  sec.scrollIntoView({behavior:'smooth', block:'start'});
+  sec.scrollIntoView({ behavior:'smooth', block:'start' });
+  checkCameraOnLaunch();
 }
 
-/* ─── KYC STATE MACHINE ─── */
-let sessionActive = false;
-let pollInterval  = null;
-let lastState     = '';
+let sessionActive = false, pollInterval = null, lastState = '';
 
-function confirmID(){
-  fetch('/next_stage',{method:'POST'})
-    .then(r=>r.json())
-    .then(()=>{
-      document.getElementById('btn-confirm').disabled = true;
-      document.getElementById('step-id').className = 'step-item verified';
+async function confirmID() {
+  if (!cameraGranted) {
+    document.getElementById('cam-gate').classList.add('visible');
+    document.getElementById('cam-gate').scrollIntoView({ behavior:'smooth' });
+    return;
+  }
+
+  const btn = document.getElementById('btn-confirm');
+  btn.disabled = true;
+  btn.innerHTML = '<span>⏳</span> Checking Identity…';
+
+  try {
+    const res  = await fetch('/next_stage', { method:'POST' });
+    const data = await res.json();
+
+    if (data.success) {
+      document.getElementById('step-id').className    = 'step-item verified';
       document.getElementById('step-pulse').className = 'step-item active';
+      document.getElementById('face-match-strip').style.display = 'none';
+      updateInstructionCard('PULSE');
+      animateMeterTo('pulse', 15);
       sessionActive = true;
       startPolling();
-    })
-    .catch(()=> alert('Could not reach the Flask backend. Ensure app.py is running on port 5000.'));
+    } else {
+      // Show specific error from backend
+      const msgs = {
+        'no_user_registered': 'No user registered. Upload a photo in the Registration panel first.',
+        'face_mismatch':      data.message,
+      };
+      showToast(msgs[data.error] || data.message || 'Identity check failed.', 'error');
+      btn.disabled = false;
+      btn.innerHTML = '<span>▶</span> Confirm Identity & Start Biometrics';
+    }
+  } catch(e) {
+    showToast('Could not reach backend. Ensure app.py is running on port 5000.', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<span>▶</span> Confirm Identity & Start Biometrics';
+  }
 }
 
-function startPolling(){
-  if(pollInterval) clearInterval(pollInterval);
+function startPolling() {
+  if (pollInterval) clearInterval(pollInterval);
   pollInterval = setInterval(pollStatus, 900);
 }
 
-const STATE_MAP = {
-  ID_SCAN:   'Confirm ID to Begin',
-  PULSE:     'Detecting Biometric Pulse...',
+const STATE_LABELS = {
+  ID_SCAN:   'Face Matching in Progress…',
+  PULSE:     'Detecting Biometric Pulse…',
   GESTURE:   'Cognitive Gesture Challenge',
   HEAD_POSE: '3D Spatial Awareness Test',
   SUCCESS:   'Identity Verified ✓',
   FAILED:    'Verification Failed ✗'
 };
 
-function pollStatus(){
+function pollStatus() {
   fetch('/get_status')
-    .then(r=>r.json())
-    .then(data=>{
-      const {state, strikes, progress} = data;
+    .then(r => r.json())
+    .then(data => {
+      const { state, strikes, progress, gesture_target,
+              face_match_status, face_match_confidence } = data;
 
-      // Update status bar
-      document.getElementById('sys-state-val').textContent = state;
-      document.getElementById('sys-progress-val').textContent = state==='GESTURE' ? progress : '—';
-      document.getElementById('vf-state').textContent = STATE_MAP[state] || state;
-      document.getElementById('vf-progress').textContent = state==='GESTURE' ? progress : '—';
+      document.getElementById('sys-state-val').textContent    = state;
+      document.getElementById('sys-progress-val').textContent = state === 'GESTURE' ? progress : '—';
+      document.getElementById('vf-state').textContent         = STATE_LABELS[state] || state;
 
-      // Update sidebar stepper
-      if(state === 'GESTURE'){
-        document.getElementById('step-pulse').className = 'step-item verified';
+      // Face match strip (only in ID_SCAN phase, before session starts)
+      if (state === 'ID_SCAN') {
+        document.getElementById('face-match-strip').style.display = 'flex';
+        updateFaceMatchStrip(face_match_confidence || 0, face_match_status || 'SCANNING');
+        document.getElementById('vf-progress').textContent =
+          face_match_status === 'MATCH' ? `${face_match_confidence?.toFixed(0)}% MATCH ✓` : `${face_match_confidence?.toFixed(0)}% — keep still`;
+      } else {
+        document.getElementById('face-match-strip').style.display = 'none';
+        document.getElementById('vf-progress').textContent = state === 'GESTURE' ? progress : '—';
+      }
+
+      // State change
+      if (state !== lastState) {
+        updateInstructionCard(state, gesture_target);
+        updateMetersForState(state, progress, face_match_confidence);
+      }
+      if (state === 'GESTURE') updateMetersForState(state, progress, face_match_confidence);
+
+      // Sidebar stepper
+      if (state === 'GESTURE') {
+        document.getElementById('step-pulse').className   = 'step-item verified';
         document.getElementById('step-gesture').className = 'step-item active';
       }
-      if(state === 'HEAD_POSE'){
+      if (state === 'HEAD_POSE') {
         document.getElementById('step-gesture').className = 'step-item verified';
-        document.getElementById('step-head').className = 'step-item active';
+        document.getElementById('step-head').className    = 'step-item active';
       }
 
       // Strikes
-      if(strikes > 0){
+      if (strikes > 0) {
         document.getElementById('strikes-display').classList.add('visible');
         document.getElementById('sd1').classList.toggle('hit', strikes >= 1);
         document.getElementById('sd2').classList.toggle('hit', strikes >= 2);
       }
 
-      // Terminal states
-      if(state === 'SUCCESS' && lastState !== 'SUCCESS'){
+      // Terminal
+      if (state === 'SUCCESS' && lastState !== 'SUCCESS') {
         document.getElementById('step-head').className = 'step-item verified';
         document.getElementById('overlay-success').classList.add('visible');
         document.getElementById('btn-reset').classList.add('visible');
         clearInterval(pollInterval);
       }
-      if(state === 'FAILED' && lastState !== 'FAILED'){
+      if (state === 'FAILED' && lastState !== 'FAILED') {
         document.getElementById('overlay-failure').classList.add('visible');
         document.getElementById('btn-reset').classList.add('visible');
         clearInterval(pollInterval);
@@ -1028,54 +1213,60 @@ function pollStatus(){
 
       lastState = state;
     })
-    .catch(()=>{}); // silently skip if backend unreachable
+    .catch(() => {});
 }
 
-function resetSession(){
-  fetch('/reset',{method:'POST'})
-    .then(r=>r.json())
-    .then(()=>{
-      clearInterval(pollInterval);
-      sessionActive = false; lastState = '';
+/* ── Idle polling during ID_SCAN (before session confirmed) ── */
+let idlePoll = null;
+function startIdlePoll() {
+  idlePoll = setInterval(() => {
+    if (sessionActive) { clearInterval(idlePoll); return; }
+    fetch('/get_status').then(r => r.json()).then(d => {
+      updateFaceMatchStrip(d.face_match_confidence || 0, d.face_match_status || 'SCANNING');
+    }).catch(() => {});
+  }, 600);
+}
 
-      // Reset sidebar
-      ['step-id','step-pulse','step-gesture','step-head'].forEach(id=>{
-        document.getElementById(id).className = 'step-item';
-      });
-      document.getElementById('step-id').className = 'step-item active';
+function resetSession() {
+  fetch('/reset', { method:'POST' }).then(r => r.json()).then(() => {
+    clearInterval(pollInterval);
+    sessionActive = false; lastState = '';
 
-      // Reset displays
-      document.getElementById('overlay-success').classList.remove('visible');
-      document.getElementById('overlay-failure').classList.remove('visible');
-      document.getElementById('strikes-display').classList.remove('visible');
-      document.getElementById('sd1').classList.remove('hit');
-      document.getElementById('sd2').classList.remove('hit');
-
-      // Reset buttons
-      document.getElementById('btn-confirm').disabled = false;
-      document.getElementById('btn-reset').classList.remove('visible');
-
-      // Reset labels
-      document.getElementById('vf-state').textContent = 'Awaiting Session Start';
-      document.getElementById('vf-progress').textContent = '—';
-      document.getElementById('sys-state-val').textContent = 'ID_SCAN';
-      document.getElementById('sys-progress-val').textContent = '—';
+    ['step-id','step-pulse','step-gesture','step-head'].forEach(id => {
+      document.getElementById(id).className = 'step-item';
     });
+    document.getElementById('step-id').className = 'step-item active';
+    document.getElementById('overlay-success').classList.remove('visible');
+    document.getElementById('overlay-failure').classList.remove('visible');
+    document.getElementById('strikes-display').classList.remove('visible');
+    document.getElementById('sd1').classList.remove('hit');
+    document.getElementById('sd2').classList.remove('hit');
+
+    const btn = document.getElementById('btn-confirm');
+    btn.disabled = false;
+    btn.innerHTML = '<span>▶</span> Confirm Identity & Start Biometrics';
+
+    document.getElementById('btn-reset').classList.remove('visible');
+    document.getElementById('vf-state').textContent    = 'Awaiting Session Start';
+    document.getElementById('vf-progress').textContent = '—';
+    document.getElementById('sys-state-val').textContent    = 'ID_SCAN';
+    document.getElementById('sys-progress-val').textContent = '—';
+    document.getElementById('face-match-strip').style.display = 'flex';
+
+    updateInstructionCard('ID_SCAN');
+    Object.keys(threatState).forEach(k => { threatState[k] = 0; });
+    ['face','pulse','gesture','spatial'].forEach(k =>
+      setMeter(`ts-${k}-val`, `ts-${k}-bar`, 0)
+    );
+    updateComposite();
+
+    startIdlePoll();
+  });
 }
 
-/* ─── NAV SCROLL HIGHLIGHT ─── */
-const sections = ['problem','features','usecases','scanner'];
-const navLinks = document.querySelectorAll('.nav-links a');
-window.addEventListener('scroll', ()=>{
-  let cur = '';
-  sections.forEach(id=>{
-    const el = document.getElementById(id);
-    if(el && window.scrollY >= el.offsetTop - 140) cur = id;
-  });
-  navLinks.forEach(a=>{
-    a.style.color = a.getAttribute('href') === '#'+cur ? 'var(--neon)' : '';
-  });
-});
+// Init
+updateInstructionCard('ID_SCAN');
+startIdlePoll();   // live face-match confidence before session starts
 </script>
 </body>
 </html>
