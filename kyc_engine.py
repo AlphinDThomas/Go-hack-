@@ -3,180 +3,160 @@ import mediapipe as mp
 import numpy as np
 import random
 import collections
-import face_recognition
+import face_recognition   # pip install face_recognition
 
 
 class KYCEngine:
+    FACE_MATCH_THRESHOLD  = 0.52   # dlib distance: lower = stricter (0.6 is default)
+    FACE_HOLD_REQUIRED    = 30     # consecutive confident frames before auto-advance
+    FACE_PROCESS_EVERY    = 3      # only run recognition every N frames (perf)
+
     def __init__(self):
-        self.mp_face = mp.solutions.face_mesh
+        self.mp_face   = mp.solutions.face_mesh
         self.face_mesh = self.mp_face.FaceMesh(refine_landmarks=True)
-        self.mp_hands = mp.solutions.hands
-        self.hands = self.mp_hands.Hands(max_num_hands=1)
-        self.mp_draw = mp.solutions.drawing_utils
+        self.mp_hands  = mp.solutions.hands
+        self.hands     = self.mp_hands.Hands(max_num_hands=1)
+        self.mp_draw   = mp.solutions.drawing_utils
 
-        self.state = 'ID_SCAN'
+        # ── Face registry ──────────────────────────────────────────────
+        self.reference_encoding = None   # numpy array, 128-d
+        self.registered_name    = "Unknown"
 
-        # ── Face Registration ──────────────────────────────────────
-        self.registered_face_encoding = None   # numpy array set by register_face()
-        self.face_match_confidence = 0.0       # 0–100, surfaced in /get_status
-        self.face_match_status = "NO_USER_REGISTERED"
-        # MATCH | NO_MATCH | SCANNING | NO_FACE_DETECTED | NO_USER_REGISTERED
+        # ── Runtime state ──────────────────────────────────────────────
+        self.state = 'FACE_MATCH'
+        self._reset_internals()
 
-        # Frame-skip so face_recognition doesn't block the video stream
-        self._frame_count = 0
-        self._FACE_CHECK_EVERY = 4             # run recognition every N frames
+    # ─────────────────────────────────────────────────────────────────
+    # Public API
+    # ─────────────────────────────────────────────────────────────────
 
-        # ── Pulse ──────────────────────────────────────────────────
-        self.pulse_buffer = collections.deque(maxlen=150)
-        self.pulse_times = collections.deque(maxlen=150)
+    def set_reference(self, encoding: np.ndarray, name: str = "User"):
+        """Load a registered face encoding into the engine."""
+        self.reference_encoding = encoding
+        self.registered_name    = name
 
-        # ── Gesture ────────────────────────────────────────────────
+    def reset(self):
+        self.state = 'FACE_MATCH'
+        self._reset_internals()
+
+    def _reset_internals(self):
+        self.face_hold_timer    = 0
+        self.face_frame_counter = 0
+        self.face_match_score   = 0.0   # 0–100 %
+        self.face_locations     = []
+        self.face_last_dist     = 1.0
+
+        self.pulse_buffer       = collections.deque(maxlen=150)
+        self.pulse_times        = collections.deque(maxlen=150)
+        self.hold_timer         = 0
+
         self.gesture_target = random.randint(1, 5)
-        self.gesture_count = 0
-        self.gesture_goal = 5
+        self.gesture_count  = 0
+        self.gesture_goal   = 5
 
-        # ── Head Pose ──────────────────────────────────────────────
-        self.head_sequence = [random.choice(["LEFT", "RIGHT"]) for _ in range(3)]
-        self.head_step = 0
-        self.awaiting_center = False
+        self.head_sequence    = [random.choice(["LEFT", "RIGHT"]) for _ in range(3)]
+        self.head_step        = 0
+        self.awaiting_center  = False
 
-        # ── Session ────────────────────────────────────────────────
         self.strikes = 0
-        self.hold_timer = 0
 
-    # ──────────────────────────────────────────────────────────────
-    # Public: register a face from raw image bytes
-    # ──────────────────────────────────────────────────────────────
-    def register_face(self, image_bytes: bytes) -> tuple[bool, str]:
-        """
-        Decode image bytes, extract face encoding, store it.
-        Returns (success: bool, message: str).
-        """
-        nparr = np.frombuffer(image_bytes, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        if img is None:
-            return False, "Could not decode image. Upload a JPG or PNG."
+    # ─────────────────────────────────────────────────────────────────
+    # Frame dispatcher
+    # ─────────────────────────────────────────────────────────────────
 
-        rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        locations = face_recognition.face_locations(rgb, model="hog")
-        if not locations:
-            return False, "No face detected in the uploaded photo. Try better lighting or a clearer shot."
-
-        if len(locations) > 1:
-            return False, f"{len(locations)} faces found. Upload a photo with exactly one face."
-
-        encodings = face_recognition.face_encodings(rgb, locations)
-        self.registered_face_encoding = encodings[0]
-        self.face_match_status = "SCANNING"
-        self.face_match_confidence = 0.0
-        return True, "Face registered successfully."
-
-    # ──────────────────────────────────────────────────────────────
-    # Main frame dispatcher
-    # ──────────────────────────────────────────────────────────────
     def process_frame(self, frame):
         h, w, _ = frame.shape
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-        if self.state == 'ID_SCAN':   return self._stage_id_scan(frame, rgb, w, h)
-        elif self.state == 'PULSE':   return self._stage_pulse(frame, rgb)
-        elif self.state == 'GESTURE': return self._stage_gesture(frame, rgb)
-        elif self.state == 'HEAD_POSE': return self._stage_head(frame, rgb, w, h)
-        elif self.state == 'SUCCESS': return self._stage_success(frame, w, h)
-        elif self.state == 'FAILED':  return self._stage_failed(frame, w, h)
-        return frame
+        dispatch = {
+            'FACE_MATCH': self._stage_face_match,
+            'PULSE':      self._stage_pulse,
+            'GESTURE':    self._stage_gesture,
+            'HEAD_POSE':  self._stage_head,
+            'SUCCESS':    self._stage_success,
+            'FAILED':     self._stage_failed,
+        }
+        fn = dispatch.get(self.state)
+        return fn(frame, rgb, w, h) if fn else frame
 
-    # ──────────────────────────────────────────────────────────────
-    # Stage 1 — ID Scan + Real-Time Face Match
-    # ──────────────────────────────────────────────────────────────
-    def _stage_id_scan(self, frame, rgb, w, h):
-        # Guide rectangle (where the user should position their face)
-        box_x1, box_y1, box_x2, box_y2 = 150, 80, w - 150, h - 80
-        cv2.rectangle(frame, (box_x1, box_y1), (box_x2, box_y2), (255, 255, 255), 2)
+    # ─────────────────────────────────────────────────────────────────
+    # STAGE 1 — Real face match
+    # ─────────────────────────────────────────────────────────────────
 
-        if self.registered_face_encoding is None:
-            # No user enrolled yet — prompt operator
-            cv2.putText(frame, "NO USER REGISTERED", (box_x1 + 10, box_y1 - 14),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 100, 255), 2)
-            cv2.putText(frame, "Upload a registered face photo on the dashboard first",
-                        (box_x1 + 10, h - 24),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.52, (0, 165, 255), 1)
-            self.face_match_status = "NO_USER_REGISTERED"
-            self.face_match_confidence = 0.0
+    def _stage_face_match(self, frame, rgb, w, h):
+        if self.reference_encoding is None:
+            # No user loaded — tell the operator
+            cv2.rectangle(frame, (0, 0), (w, h), (0, 0, 200), 4)
+            cv2.putText(frame, "NO USER LOADED", (30, h // 2 - 20),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 80, 255), 3)
+            cv2.putText(frame, "Register a user first in the dashboard",
+                        (30, h // 2 + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (180, 180, 180), 1)
             return frame
 
-        # ── Run face recognition every N frames ──────────────────
-        self._frame_count += 1
-        if self._frame_count % self._FACE_CHECK_EVERY == 0:
-            # Downsample for speed
-            small = cv2.resize(rgb, (0, 0), fx=0.5, fy=0.5)
-            locations = face_recognition.face_locations(small, model="hog")
+        self.face_frame_counter += 1
 
-            if not locations:
-                self.face_match_status = "NO_FACE_DETECTED"
-                self.face_match_confidence = 0.0
-            else:
-                # Scale locations back up
-                locations_full = [(t*2, r*2, b*2, l*2) for (t, r, b, l) in locations]
-                encodings = face_recognition.face_encodings(rgb, locations_full)
+        # Run recognition every N frames for performance
+        if self.face_frame_counter % self.FACE_PROCESS_EVERY == 0:
+            small   = cv2.resize(rgb, (0, 0), fx=0.5, fy=0.5)  # halve res → 4× faster
+            locs    = face_recognition.face_locations(small, model="hog")
+            # Scale locations back up
+            self.face_locations = [(t*2, r*2, b*2, l*2) for (t, r, b, l) in locs]
 
-                best_distance = 1.0
-                best_loc = None
-                for enc, loc in zip(encodings, locations_full):
+            if self.face_locations:
+                encs = face_recognition.face_encodings(rgb, self.face_locations)
+                if encs:
                     dist = face_recognition.face_distance(
-                        [self.registered_face_encoding], enc
+                        [self.reference_encoding], encs[0]
                     )[0]
-                    if dist < best_distance:
-                        best_distance = dist
-                        best_loc = loc
+                    self.face_last_dist  = dist
+                    self.face_match_score = max(0.0, (1.0 - dist / self.FACE_MATCH_THRESHOLD) * 100)
+                    self.face_match_score = min(self.face_match_score, 100.0)
+                else:
+                    self.face_match_score = 0.0
+            else:
+                self.face_match_score = 0.0
 
-                # Convert distance → confidence (0–100 %)
-                # distance 0 = perfect match, distance 0.6+ = no match
-                confidence_pct = max(0.0, (1.0 - best_distance / 0.6)) * 100
-                self.face_match_confidence = round(confidence_pct, 1)
-                matched = best_distance < 0.50   # tunable threshold
+        matched = self.face_last_dist < self.FACE_MATCH_THRESHOLD
 
-                self.face_match_status = "MATCH" if matched else "NO_MATCH"
+        # ── Draw face box ──────────────────────────────────────────
+        for (top, right, bottom, left) in self.face_locations:
+            color = (0, 220, 80) if matched else (0, 80, 220)
+            cv2.rectangle(frame, (left, top), (right, bottom), color, 2)
 
-                # Draw bounding box with colour feedback
-                if best_loc:
-                    top, right, bottom, left = best_loc
-                    box_color = (0, 220, 80) if matched else (0, 60, 255)
-                    cv2.rectangle(frame, (left, top), (right, bottom), box_color, 2)
-                    label = f"{'✓ MATCH' if matched else '✗ NO MATCH'}  {self.face_match_confidence:.0f}%"
-                    cv2.putText(frame, label, (left, max(top - 10, 20)),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.65, box_color, 2)
+            label = (f"{self.registered_name}  {self.face_match_score:.0f}%"
+                     if matched else f"No match  {self.face_match_score:.0f}%")
+            cv2.rectangle(frame, (left, bottom - 26), (right, bottom), color, cv2.FILLED)
+            cv2.putText(frame, label, (left + 6, bottom - 8),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
 
-        # ── Status overlay at bottom ─────────────────────────────
-        STATUS_COLORS = {
-            "MATCH":            (0, 220, 80),
-            "NO_MATCH":         (0, 60, 255),
-            "SCANNING":         (0, 200, 255),
-            "NO_FACE_DETECTED": (0, 165, 255),
-        }
-        color = STATUS_COLORS.get(self.face_match_status, (200, 200, 200))
-        status_text = {
-            "MATCH":            f"FACE VERIFIED — {self.face_match_confidence:.0f}% CONFIDENCE",
-            "NO_MATCH":         f"FACE MISMATCH — {self.face_match_confidence:.0f}% (need >50%)",
-            "SCANNING":         "SCANNING — ALIGN YOUR FACE WITH THE BOX",
-            "NO_FACE_DETECTED": "NO FACE DETECTED — MOVE CLOSER",
-        }.get(self.face_match_status, self.face_match_status)
+        # ── Hold timer & progress bar ──────────────────────────────
+        if matched:
+            self.face_hold_timer += 1
+        else:
+            self.face_hold_timer = max(0, self.face_hold_timer - 1)
 
-        cv2.putText(frame, status_text, (20, h - 20),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.60, color, 2)
+        bar_w = int((self.face_hold_timer / self.FACE_HOLD_REQUIRED) * (w - 60))
+        cv2.rectangle(frame, (30, h - 40), (w - 30, h - 20), (40, 40, 40), cv2.FILLED)
+        cv2.rectangle(frame, (30, h - 40), (30 + bar_w, h - 20), (0, 220, 80), cv2.FILLED)
 
-        # ── Confidence bar ───────────────────────────────────────
-        bar_w = int((w - 40) * self.face_match_confidence / 100)
-        cv2.rectangle(frame, (20, h - 12), (w - 20, h - 6), (40, 40, 40), cv2.FILLED)
-        if bar_w > 0:
-            cv2.rectangle(frame, (20, h - 12), (20 + bar_w, h - 6), color, cv2.FILLED)
+        header = (f"VERIFYING: {self.registered_name}" if self.face_locations
+                  else "LOOKING FOR FACE...")
+        cv2.putText(frame, header, (30, 36),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 255), 2)
+        cv2.putText(frame, "HOLD STILL — FACE COMPARISON IN PROGRESS",
+                    (30, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (160, 160, 160), 1)
+
+        if self.face_hold_timer >= self.FACE_HOLD_REQUIRED:
+            self.state = 'PULSE'
+            self.hold_timer = 0
 
         return frame
 
-    # ──────────────────────────────────────────────────────────────
-    # Stage 2 — Passive Liveness (rPPG placeholder)
-    # ──────────────────────────────────────────────────────────────
-    def _stage_pulse(self, frame, rgb):
+    # ─────────────────────────────────────────────────────────────────
+    # STAGE 2 — Pulse (rPPG)
+    # ─────────────────────────────────────────────────────────────────
+
+    def _stage_pulse(self, frame, rgb, w, h):
         results = self.face_mesh.process(rgb)
         if results.multi_face_landmarks:
             cv2.putText(frame, "ANALYZING BIOMETRIC PULSE...", (30, 50),
@@ -188,68 +168,58 @@ class KYCEngine:
             if self.hold_timer > 60:
                 self.state = 'GESTURE'
                 self.hold_timer = 0
-        else:
-            cv2.putText(frame, "ALIGN YOUR FACE WITH THE CAMERA", (30, 50),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 165, 255), 2)
         return frame
 
-    # ──────────────────────────────────────────────────────────────
-    # Stage 3 — Gesture Challenge
-    # ──────────────────────────────────────────────────────────────
-    def _stage_gesture(self, frame, rgb):
+    # ─────────────────────────────────────────────────────────────────
+    # STAGE 3 — Gesture challenge
+    # ─────────────────────────────────────────────────────────────────
+
+    def _stage_gesture(self, frame, rgb, w, h):
         results = self.hands.process(rgb)
-        cv2.putText(frame, f"CHALLENGE: SHOW {self.gesture_target} FINGERS", (30, 50),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 255), 2)
-        cv2.putText(frame, f"Progress: {self.gesture_count}/{self.gesture_goal}", (30, 80),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 2)
+        cv2.putText(frame, f"CHALLENGE: SHOW {self.gesture_target} FINGERS",
+                    (30, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 255), 2)
+        cv2.putText(frame, f"Progress: {self.gesture_count}/{self.gesture_goal}",
+                    (30, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 2)
 
         if results.multi_hand_landmarks:
-            for hand_landmarks, handedness in zip(
-                results.multi_hand_landmarks, results.multi_handedness
-            ):
-                self.mp_draw.draw_landmarks(
-                    frame, hand_landmarks, self.mp_hands.HAND_CONNECTIONS
-                )
+            for hand_lm, handedness in zip(results.multi_hand_landmarks,
+                                           results.multi_handedness):
+                self.mp_draw.draw_landmarks(frame, hand_lm, self.mp_hands.HAND_CONNECTIONS)
                 tip_ids = [4, 8, 12, 16, 20]
                 fingers = []
                 is_right = handedness.classification[0].label == 'Right'
-                thumb_tip = hand_landmarks.landmark[tip_ids[0]]
-                thumb_ip  = hand_landmarks.landmark[tip_ids[0] - 1]
-                if is_right:
-                    fingers.append(1 if thumb_tip.x < thumb_ip.x else 0)
-                else:
-                    fingers.append(1 if thumb_tip.x > thumb_ip.x else 0)
-
+                thumb_tip = hand_lm.landmark[tip_ids[0]]
+                thumb_ip  = hand_lm.landmark[tip_ids[0] - 1]
+                fingers.append(1 if (is_right and thumb_tip.x < thumb_ip.x)
+                                 or (not is_right and thumb_tip.x > thumb_ip.x) else 0)
                 for i in range(1, 5):
                     fingers.append(
-                        1 if hand_landmarks.landmark[tip_ids[i]].y
-                             < hand_landmarks.landmark[tip_ids[i] - 2].y
-                        else 0
+                        1 if hand_lm.landmark[tip_ids[i]].y
+                           < hand_lm.landmark[tip_ids[i] - 2].y else 0
                     )
 
-                current_fingers = sum(fingers)
-                if current_fingers == self.gesture_target:
+                if fingers.count(1) == self.gesture_target:
                     self.hold_timer += 1
-                    cv2.rectangle(frame, (30, 110),
-                                  (30 + self.hold_timer * 15, 130),
-                                  (0, 255, 0), cv2.FILLED)
+                    bar = min(self.hold_timer * 15, 300)
+                    cv2.rectangle(frame, (30, 110), (30 + bar, 130), (0, 255, 0), cv2.FILLED)
                     if self.hold_timer > 20:
                         self.gesture_count += 1
                         self.hold_timer = 0
                         if self.gesture_count >= self.gesture_goal:
                             self.state = 'HEAD_POSE'
                         else:
-                            new_t = self.gesture_target
-                            while new_t == self.gesture_target:
-                                new_t = random.randint(1, 5)
-                            self.gesture_target = new_t
+                            t = self.gesture_target
+                            while t == self.gesture_target:
+                                t = random.randint(1, 5)
+                            self.gesture_target = t
                 else:
                     self.hold_timer = 0
         return frame
 
-    # ──────────────────────────────────────────────────────────────
-    # Stage 4 — 3D Head-Pose Sequence
-    # ──────────────────────────────────────────────────────────────
+    # ─────────────────────────────────────────────────────────────────
+    # STAGE 4 — 3D Head pose
+    # ─────────────────────────────────────────────────────────────────
+
     def _stage_head(self, frame, rgb, w, h):
         results = self.face_mesh.process(rgb)
         direction = "CENTER"
@@ -265,30 +235,23 @@ class KYCEngine:
 
                 face_2d = np.array(face_2d, dtype=np.float64)
                 face_3d = np.array(face_3d, dtype=np.float64)
-                cam_matrix = np.array(
-                    [[w, 0, w / 2], [0, w, h / 2], [0, 0, 1]], dtype=np.float64
-                )
-                success, rot_vec, _ = cv2.solvePnP(
-                    face_3d, face_2d, cam_matrix,
-                    np.zeros((4, 1), dtype=np.float64)
-                )
+                cam_matrix = np.array([[w, 0, w/2], [0, w, h/2], [0, 0, 1]], dtype=np.float64)
+                _, rot_vec, _ = cv2.solvePnP(face_3d, face_2d, cam_matrix,
+                                              np.zeros((4, 1), dtype=np.float64))
                 rmat, _ = cv2.Rodrigues(rot_vec)
                 angles, *_ = cv2.RQDecomp3x3(rmat)
                 pitch, yaw = angles[0] * 360, angles[1] * 360
 
-                if yaw < -18:   direction = "LEFT"
-                elif yaw > 18:  direction = "RIGHT"
-                else:           direction = "CENTER"
+                direction = ("LEFT" if yaw < -18 else "RIGHT" if yaw > 18 else "CENTER")
 
                 nx = int(face_lm.landmark[1].x * w)
                 ny = int(face_lm.landmark[1].y * h)
                 cv2.line(frame, (nx, ny),
-                         (int(nx + yaw * 2), int(ny - pitch * 2)),
-                         (255, 165, 0), 3)
+                         (int(nx + yaw * 2), int(ny - pitch * 2)), (255, 165, 0), 3)
 
         if self.strikes > 0:
-            cv2.putText(frame, f"WARNING: {self.strikes}/2 STRIKES",
-                        (30, 130), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+            cv2.putText(frame, f"WARNING: {self.strikes}/2 STRIKES", (30, 130),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
         if self.awaiting_center:
             cv2.putText(frame, "RETURN TO CENTER", (30, 50),
@@ -308,8 +271,7 @@ class KYCEngine:
 
             if direction == target:
                 self.hold_timer += 1
-                cv2.rectangle(frame, (30, 80),
-                              (30 + self.hold_timer * 20, 100),
+                cv2.rectangle(frame, (30, 80), (30 + self.hold_timer * 20, 100),
                               (0, 255, 0), -1)
                 if self.hold_timer >= 10:
                     self.head_step += 1
@@ -320,8 +282,7 @@ class KYCEngine:
                         self.awaiting_center = True
             elif direction in ("LEFT", "RIGHT") and direction != target:
                 self.hold_timer += 1
-                cv2.rectangle(frame, (30, 80),
-                              (30 + self.hold_timer * 20, 100),
+                cv2.rectangle(frame, (30, 80), (30 + self.hold_timer * 20, 100),
                               (0, 0, 255), -1)
                 if self.hold_timer >= 10:
                     self.strikes += 1
@@ -334,43 +295,18 @@ class KYCEngine:
 
         return frame
 
-    # ──────────────────────────────────────────────────────────────
-    # Terminal states
-    # ──────────────────────────────────────────────────────────────
-    def _stage_success(self, frame, w, h):
-        cv2.rectangle(frame, (0, 0), (w, h), (0, 220, 80), 10)
-        cv2.putText(frame, "IDENTITY VERIFIED",
-                    (w // 2 - 160, h // 2),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 220, 80), 4)
+    # ─────────────────────────────────────────────────────────────────
+    # Terminal stages
+    # ─────────────────────────────────────────────────────────────────
+
+    def _stage_success(self, frame, rgb, w, h):
+        cv2.rectangle(frame, (0, 0), (w, h), (0, 255, 0), 10)
+        cv2.putText(frame, f"IDENTITY VERIFIED — {self.registered_name}",
+                    (int(w/2) - 200, int(h/2)), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 4)
         return frame
 
-    def _stage_failed(self, frame, w, h):
+    def _stage_failed(self, frame, rgb, w, h):
         cv2.rectangle(frame, (0, 0), (w, h), (0, 0, 255), 10)
-        cv2.putText(frame, "KYC FAILED: ANOMALY DETECTED",
-                    (w // 2 - 280, h // 2),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 4)
+        cv2.putText(frame, "KYC FAILED — ANOMALY DETECTED",
+                    (int(w/2) - 250, int(h/2)), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 4)
         return frame
-
-    # ──────────────────────────────────────────────────────────────
-    # Reset — preserves the registered face encoding across sessions
-    # ──────────────────────────────────────────────────────────────
-    def reset(self):
-        self.state = 'ID_SCAN'
-        self.pulse_buffer.clear()
-        self.pulse_times.clear()
-
-        self.gesture_target = random.randint(1, 5)
-        self.gesture_count = 0
-
-        self.head_sequence = [random.choice(["LEFT", "RIGHT"]) for _ in range(3)]
-        self.head_step = 0
-        self.awaiting_center = False
-
-        self.strikes = 0
-        self.hold_timer = 0
-        self._frame_count = 0
-
-        # Reset match state but KEEP the registered encoding
-        if self.registered_face_encoding is not None:
-            self.face_match_status = "SCANNING"
-        self.face_match_confidence = 0.0
