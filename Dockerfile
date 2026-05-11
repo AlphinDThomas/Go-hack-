@@ -1,6 +1,5 @@
 FROM python:3.11-slim
 
-# Install system libraries required by OpenCV, dlib, and face_recognition
 RUN apt-get update && apt-get install -y \
   build-essential \
   cmake \
@@ -11,7 +10,8 @@ RUN apt-get update && apt-get install -y \
   libgomp1 \
   libx11-6 \
   libxcb1 \
-  libdlib-dev \
+  libgl1-mesa-glx \
+  libglib2.0-dev \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
